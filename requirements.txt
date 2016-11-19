@@ -1,0 +1,8 @@
+aiodns
+aiohttp
+ujson
+motor
+uvloop
+sanic
+aiozmq
+msgpack-python
