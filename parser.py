@@ -9,7 +9,8 @@ from uvloop import EventLoopPolicy
 from config import ITEM_SOCKET, log, DATABASE_NAME, MONGO_SERVER
 from feedparser import parse as feed_parse
 from time import mktime
-from html2text import html2text
+from bs4 import BeautifulSoup
+from langdetect import detect
 
 
 def get_entry_content(entry):
@@ -56,6 +57,13 @@ def get_entry_id(entry):
         return sha1(entry.title.encode('utf-8')).hexdigest()
 
 
+def get_plaintext(entry):
+    soup = BeautifulSoup(get_entry_content(entry))
+    for script in soup(["script", "style"]):
+        script.extract()
+    return soup.get_text()
+
+
 class Handler(AttrHandler):
 
     def __init__(self, db):
@@ -74,11 +82,14 @@ class Handler(AttrHandler):
                 log.debug(entry.link)
                 when = get_entry_date(entry)
                 body = get_entry_content(entry)
+                plaintext = get_plaintext(entry)
 
                 await self.database.entries.update_one({'_id': entry.link},
                                                        {'$set': {"date": when,
+                                                                 "title": entry.title,
                                                                  "body": body,
-                                                                 "plaintext": html2text(body),
+                                                                 "plaintext": plaintext,
+                                                                 "lang": detect(plaintext),
                                                                  "url": entry.link}},
                                                        upsert=True)
 
