@@ -3,7 +3,7 @@ from asyncio import get_event_loop, Semaphore, gather, ensure_future
 from aiohttp import ClientSession
 from xml.etree import ElementTree
 
-from pymongo import MongoClient, ASCENDING
+from pymongo import MongoClient, ASCENDING, DESCENDING
 from datetime import datetime
 from config import log, FETCH_INTERVAL, MONGO_SERVER, DATABASE_NAME, DATE_FORMAT
 
@@ -15,6 +15,9 @@ def feeds_from_opml(filename):
                    'url': feed.get('xmlUrl')}
 
 def update_database(db, filename):
+    entries = db.entries
+    db.entries.create_index([("date", DESCENDING)])
+    db.entries.create_index([("url", ASCENDING)])
     feeds = db.feeds
     db.feeds.create_index([("url", ASCENDING)])
     for feed in feeds_from_opml(filename):
