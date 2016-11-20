@@ -7,3 +7,4 @@ sanic
 aiozmq
 msgpack-python
 feedparser
+html2text

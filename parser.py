@@ -8,6 +8,8 @@ from aiozmq.rpc import AttrHandler, serve_pipeline, method
 from uvloop import EventLoopPolicy
 from config import ITEM_SOCKET, log, DATABASE_NAME, MONGO_SERVER
 from feedparser import parse as feed_parse
+from time import mktime
+from html2text import html2text
 
 
 def get_entry_content(entry):
@@ -33,7 +35,7 @@ def get_entry_date(entry):
     for header in ['modified', 'issued', 'created']:
         when = entry.get(header+'_parsed', None)
         if when:
-            return when
+            return datetime.fromtimestamp(mktime(when))
     return datetime.now()
 
 
@@ -64,17 +66,21 @@ class Handler(AttrHandler):
         log.info("Parsing %s", url)
         result = feed_parse(text)
         if not len(result.entries):
-            log.info('No valid entries')
+            log.info('%s: No valid entries', url)
             return
         else:
-            log.info('%d entries' , len(result.entries))
+            log.info('%s: %d entries', url, len(result.entries))
             for entry in result.entries:
-                log.info(entry.link)
+                log.debug(entry.link)
                 when = get_entry_date(entry)
                 body = get_entry_content(entry)
 
                 await self.database.entries.update_one({'_id': entry.link},
-                                                    {'$set': {"date": when, "body": body, "url": entry.link}}, upsert=True)
+                                                       {'$set': {"date": when,
+                                                                 "body": body,
+                                                                 "plaintext": html2text(body),
+                                                                 "url": entry.link}},
+                                                       upsert=True)
 
 async def server(database):
     log.info("Server starting")
