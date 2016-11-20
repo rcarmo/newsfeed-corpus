@@ -22,7 +22,7 @@ This is a set of independent worker processes written in Python 3.5:
 * [ ] `api.py` provides a REST API to retrieve recent items
 * [ ] `topics.py` does topic detection
 
-Processes are written to leverage `asyncio`  and talk via [0MQ][0mq], so they can be deployed on separate machines. [piku][piku] is currently used for deployment, but packaging and deploying them using Docker and [alpine-python][ap] is trivial.
+Processes are written to leverage `asyncio/uvloop`  and talk via [0MQ][0mq], so they can be deployed on separate machines. [piku][piku] is currently used for deployment, but packaging and deploying them using Docker and [alpine-python][ap] is trivial.
 
 [0mq]: https://github.com/aio-libs/aiozmq
 [csa]: https://www.microsoft.com/cognitive-services
