@@ -66,14 +66,15 @@ class Handler(AttrHandler):
         if not len(result.entries):
             log.info('No valid entries')
             return
-        async for entry in result.entries:
-            log.info(entry.link)
-            uuid = get_entry_id(entry)
-            when = get_entry_date(entry)
-            body = get_entry_content(entry)
+        else:
+            log.info('%d entries' , len(result.entries))
+            for entry in result.entries:
+                log.info(entry.link)
+                when = get_entry_date(entry)
+                body = get_entry_content(entry)
 
-            await self.database.entries.update_one({'_id': uuid},
-                                                   {'$set': {"date": when, "body": body, "url": entry.link}}, upsert=True)
+                await self.database.entries.update_one({'_id': entry.link},
+                                                    {'$set': {"date": when, "body": body, "url": entry.link}}, upsert=True)
 
 async def server(database):
     log.info("Server starting")
