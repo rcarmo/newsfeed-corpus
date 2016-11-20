@@ -16,12 +16,16 @@ dictConfig({
         "http": {
             "format" : "localhost - - [%(asctime)s] %(process)d %(levelname)s %(message)s",
             "datefmt": "%Y/%m/%d %H:%M:%S"
+        },
+        "service": {
+            "format" : "%(asctime)s %(levelname)s %(message)s",
+            "datefmt": "%Y-%m-%d %H:%M:%S"
         }
     },
     "handlers": {
         "console": {
             "class"    : "logging.StreamHandler",
-            "formatter": "http",
+            "formatter": "service",
             "level"    : "DEBUG",
             "stream"   : "ext://sys.stdout"
         },
@@ -35,7 +39,7 @@ dictConfig({
     "loggers": {
     },
     "root": {
-        "level"   : "DEBUG",
+        "level"   : "DEBUG" if environ.get('DEBUG','True').lower() == 'true' else "INFO",
         "handlers": ["console"]
     }
 })
