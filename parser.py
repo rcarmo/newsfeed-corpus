@@ -82,7 +82,7 @@ class Handler(AttrHandler):
                 log.debug(entry.link)
                 when = get_entry_date(entry)
                 body = get_entry_content(entry)
-                plaintext = get_plaintext(entry)
+                plaintext = entry.title + " " + get_plaintext(entry)
 
                 await self.database.entries.update_one({'_id': entry.link},
                                                        {'$set': {"date": when,
