@@ -10,7 +10,7 @@ from aiozmq.rpc import connect_pipeline
 from uvloop import EventLoopPolicy
 from aiohttp import ClientSession
 from motor.motor_asyncio import AsyncIOMotorClient
-from config import log, FETCH_INTERVAL, MONGO_SERVER, DATABASE_NAME, ITEM_SOCKET
+from config import log, CHECK_INTERVAL, FETCH_INTERVAL, MONGO_SERVER, DATABASE_NAME, ITEM_SOCKET
 
 async def fetch_one(session, feed, client, database):
     """Fetch a single feed"""
@@ -50,7 +50,7 @@ async def fetch_one(session, feed, client, database):
 
             if notify:
                 log.debug("Notifying...")
-                await client.notify.parse(url)
+                await client.notify.parse(url, text)
 
             return feed, response.status
 
@@ -81,7 +81,7 @@ async def fetcher(database):
     async with ClientSession() as session:
         log.info("Beginning run.")
         async for feed in database.feeds.find({}):
-            log.info("Checking %s", feed['url'])
+            log.debug("Checking %s", feed['url'])
             last_fetched = feed.get('last_fetched', threshold)
             if last_fetched <= threshold:
                 task = ensure_future(throttle(sem, session, feed, client, database))
@@ -100,8 +100,8 @@ def main():
     while True:
         loop = get_event_loop()
         loop.run_until_complete(ensure_future(fetcher(database)))
-        log.info("Sleeping %ds...", FETCH_INTERVAL)
-        sleep(FETCH_INTERVAL)
+        log.info("Sleeping %ds...", CHECK_INTERVAL)
+        sleep(CHECK_INTERVAL)
 
 if __name__ == '__main__':
     main()

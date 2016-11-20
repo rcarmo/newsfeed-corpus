@@ -4,7 +4,8 @@ from os import environ
 from logging import getLogger
 from logging.config import dictConfig
 
-FETCH_INTERVAL = int(environ.get('FETCH_INTERVAL', 15))
+FETCH_INTERVAL = int(environ.get('FETCH_INTERVAL', 3600))
+CHECK_INTERVAL = int(environ.get('CHECK_INTERVAL', 900))
 MONGO_SERVER = environ.get('MONGO_SERVER', 'localhost:27017')
 DATABASE_NAME = environ.get('DATABASE_NAME', 'feeds')
 DATE_FORMAT = '%Y-%m-%d %H:%M:%S'
