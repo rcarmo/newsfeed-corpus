@@ -1,5 +1,8 @@
+#!/usr/bin/env python3
+
 """ Feed parser """
 
+from time import mktime
 from datetime import datetime
 from hashlib import sha1
 from asyncio import get_event_loop, set_event_loop_policy
@@ -8,7 +11,6 @@ from aiozmq.rpc import AttrHandler, serve_pipeline, method
 from uvloop import EventLoopPolicy
 from config import ITEM_SOCKET, log, DATABASE_NAME, MONGO_SERVER
 from feedparser import parse as feed_parse
-from time import mktime
 from bs4 import BeautifulSoup
 from langdetect import detect
 
@@ -33,6 +35,7 @@ def get_entry_content(entry):
 
 def get_entry_date(entry):
     """Select the best timestamp for an entry"""
+
     for header in ['modified', 'issued', 'created']:
         when = entry.get(header+'_parsed', None)
         if when:
@@ -57,20 +60,25 @@ def get_entry_id(entry):
         return sha1(entry.title.encode('utf-8')).hexdigest()
 
 
-def get_plaintext(entry):
-    soup = BeautifulSoup(get_entry_content(entry))
+def get_plaintext(html):
+    """Scrub out tags and extract plaintext"""
+
+    soup = BeautifulSoup(html)
     for script in soup(["script", "style"]):
         script.extract()
     return soup.get_text()
 
 
 class Handler(AttrHandler):
+    """0MQ handler"""
 
     def __init__(self, db):
         self.database = db
 
     @method
     async def parse(self, url, text):
+        """Parse a feed into its constituent entries"""
+
         log.info("Parsing %s", url)
         result = feed_parse(text)
         if not len(result.entries):
@@ -78,11 +86,12 @@ class Handler(AttrHandler):
             return
         else:
             log.info('%s: %d entries', url, len(result.entries))
+            # TODO: turn this into a bulk insert
             for entry in result.entries:
                 log.debug(entry.link)
                 when = get_entry_date(entry)
                 body = get_entry_content(entry)
-                plaintext = entry.title + " " + get_plaintext(entry)
+                plaintext = entry.title + " " + get_plaintext(body)
 
                 await self.database.entries.update_one({'_id': entry.link},
                                                        {'$set': {"date": when,
@@ -94,11 +103,16 @@ class Handler(AttrHandler):
                                                        upsert=True)
 
 async def server(database):
+    """Server pipeline"""
+
     log.info("Server starting")
     listener = await serve_pipeline(Handler(database), bind=ITEM_SOCKET)
     await listener.wait_closed()
 
+
 def main():
+    """Main loop"""
+
     set_event_loop_policy(EventLoopPolicy())
     conn = AsyncIOMotorClient(MONGO_SERVER)
     database = conn[DATABASE_NAME]

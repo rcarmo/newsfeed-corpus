@@ -1,4 +1,4 @@
-#!/bin/env python3
+#!/usr/bin/env python3
 
 """ Feed fetcher """
 
@@ -11,6 +11,7 @@ from uvloop import EventLoopPolicy
 from aiohttp import ClientSession
 from motor.motor_asyncio import AsyncIOMotorClient
 from config import log, CHECK_INTERVAL, FETCH_INTERVAL, MONGO_SERVER, DATABASE_NAME, ITEM_SOCKET
+
 
 async def fetch_one(session, feed, client, database):
     """Fetch a single feed"""
@@ -102,6 +103,7 @@ def main():
         loop.run_until_complete(ensure_future(fetcher(database)))
         log.info("Sleeping %ds...", CHECK_INTERVAL)
         sleep(CHECK_INTERVAL)
+
 
 if __name__ == '__main__':
     main()
