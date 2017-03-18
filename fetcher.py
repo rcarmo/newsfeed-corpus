@@ -6,10 +6,11 @@ from datetime import datetime, timedelta
 from hashlib import sha1
 from asyncio import get_event_loop, Semaphore, gather, ensure_future, set_event_loop_policy, sleep
 from aiozmq.rpc import connect_pipeline, AttrHandler, serve_pipeline, method
+from traceback import format_exc
 from uvloop import EventLoopPolicy
 from aiohttp import ClientSession
 from motor.motor_asyncio import AsyncIOMotorClient
-from config import log, CHECK_INTERVAL, FETCH_INTERVAL, MONGO_SERVER, DATABASE_NAME, ENTRY_PARSER,  FEED_FETCHER, get_profile
+from config import log, CHECK_INTERVAL, FETCH_INTERVAL, MONGO_SERVER, DATABASE_NAME, ENTRY_PARSER,  FEED_FETCHER, MAX_CONCURRENT_REQUESTS, get_profile
 
 class Handler(AttrHandler):
     """0MQ handler"""
@@ -70,7 +71,7 @@ async def fetch_one(session, feed, client, database):
             return feed, response.status
 
     except Exception as e:
-        log.error(e)
+        log.error(format_exc())
         await database.feeds.update_one({'url': url},
                                         {'$set': {'last_status': 0,
                                                   'last_fetched': datetime.now()}})
@@ -88,7 +89,7 @@ async def throttle(sem, session, feed, client, database):
 async def fetcher(database):
     """Fetch all the feeds"""
 
-    sem = Semaphore(100)
+    sem = Semaphore(MAX_CONCURRENT_REQUESTS)
 
     while True:
         client = await connect_pipeline(connect=ENTRY_PARSER)
@@ -111,8 +112,9 @@ async def fetcher(database):
 
 
 def main():
-    """Main function"""
+    """Setup coroutines and kickstart fetcher"""
     set_event_loop_policy(EventLoopPolicy())
+
     conn = AsyncIOMotorClient(MONGO_SERVER)
     database = conn[DATABASE_NAME]
 
