@@ -1,0 +1,14 @@
+fetcher:
+  build: .
+  env_file: 
+    - ENV
+  ports:
+    - "8000:8000"
+  volumes:
+    - .:/app
+  links:
+    - db
+  working_dir: /app
+  command: python fetcher.py
+db:
+  image: mongo:3.4
