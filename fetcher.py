@@ -3,14 +3,28 @@
 """ Feed fetcher """
 
 from datetime import datetime, timedelta
-from time import sleep
 from hashlib import sha1
-from asyncio import get_event_loop, Semaphore, gather, ensure_future, set_event_loop_policy
-from aiozmq.rpc import connect_pipeline
+from asyncio import get_event_loop, Semaphore, gather, ensure_future, set_event_loop_policy, sleep
+from aiozmq.rpc import connect_pipeline, AttrHandler, serve_pipeline, method
 from uvloop import EventLoopPolicy
 from aiohttp import ClientSession
 from motor.motor_asyncio import AsyncIOMotorClient
-from config import log, CHECK_INTERVAL, FETCH_INTERVAL, MONGO_SERVER, DATABASE_NAME, ITEM_SOCKET
+from config import log, CHECK_INTERVAL, FETCH_INTERVAL, MONGO_SERVER, DATABASE_NAME, ENTRY_PARSER,  FEED_FETCHER, get_profile
+
+class Handler(AttrHandler):
+    """0MQ handler"""
+
+    @method
+    async def profile(self):
+        return get_profile()
+
+
+async def server():
+    """Server pipeline"""
+
+    log.info("RPC Server starting")
+    listener = await serve_pipeline(Handler(), bind=FEED_FETCHER)
+    await listener.wait_closed()
 
 
 async def fetch_one(session, feed, client, database):
@@ -75,22 +89,25 @@ async def fetcher(database):
     """Fetch all the feeds"""
 
     sem = Semaphore(100)
-    client = await connect_pipeline(connect=ITEM_SOCKET)
-    tasks = []
-    threshold = datetime.now() - timedelta(seconds=FETCH_INTERVAL)
 
-    async with ClientSession() as session:
-        log.info("Beginning run.")
-        async for feed in database.feeds.find({}):
-            log.debug("Checking %s", feed['url'])
-            last_fetched = feed.get('last_fetched', threshold)
-            if last_fetched <= threshold:
-                task = ensure_future(throttle(sem, session, feed, client, database))
-                tasks.append(task)
+    while True:
+        client = await connect_pipeline(connect=ENTRY_PARSER)
+        tasks = []
+        threshold = datetime.now() - timedelta(seconds=FETCH_INTERVAL)
 
-        responses = gather(*tasks)
-        await responses
-        log.info("Run complete.")
+        async with ClientSession() as session:
+            log.info("Beginning run.")
+            async for feed in database.feeds.find({}):
+                log.debug("Checking %s", feed['url'])
+                last_fetched = feed.get('last_fetched', threshold)
+                if last_fetched <= threshold:
+                    task = ensure_future(throttle(sem, session, feed, client, database))
+                    tasks.append(task)
+
+            responses = gather(*tasks)
+            await responses
+            log.info("Run complete, sleeping %ds...", CHECK_INTERVAL)
+            await sleep(CHECK_INTERVAL)
 
 
 def main():
@@ -98,11 +115,14 @@ def main():
     set_event_loop_policy(EventLoopPolicy())
     conn = AsyncIOMotorClient(MONGO_SERVER)
     database = conn[DATABASE_NAME]
-    while True:
-        loop = get_event_loop()
-        loop.run_until_complete(ensure_future(fetcher(database)))
-        log.info("Sleeping %ds...", CHECK_INTERVAL)
-        sleep(CHECK_INTERVAL)
+
+    loop = get_event_loop()
+    ensure_future(server())
+    ensure_future(fetcher(database))
+    try:
+        loop.run_forever()
+    finally:
+        loop.close()
 
 
 if __name__ == '__main__':

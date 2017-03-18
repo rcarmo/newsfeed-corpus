@@ -1,15 +1,38 @@
 """ Configuration """
 
 from os import environ
+from io import StringIO
 from logging import getLogger
 from logging.config import dictConfig
+from cProfile import Profile
+from pstats import Stats
 
 FETCH_INTERVAL = int(environ.get('FETCH_INTERVAL', 3600))
 CHECK_INTERVAL = int(environ.get('CHECK_INTERVAL', 900))
 MONGO_SERVER = environ.get('MONGO_SERVER', 'localhost:27017')
 DATABASE_NAME = environ.get('DATABASE_NAME', 'feeds')
 DATE_FORMAT = '%Y-%m-%d %H:%M:%S'
-ITEM_SOCKET = environ.get('ITEM_SOCKET', 'tcp://127.0.0.1:4675')
+FEED_FETCHER = environ.get('FEED_FETCHER', 'tcp://127.0.0.1:4674')
+ENTRY_PARSER = environ.get('ENTRY_PARSER', 'tcp://127.0.0.1:4675')
+PROFILER = (environ.get('PROFILER', 'true').lower() == "true")
+
+if PROFILER:
+    profiler = Profile()
+    profiler.enable()
+else:
+    profiler = None
+
+async def get_profile():
+    """Return a profile dump"""
+    
+    global profiler
+    log.info(profiler)
+
+    if profiler:
+        profiler.create_stats()
+        return profiler.stats
+    return None
+
 
 dictConfig({
     "version": 1,

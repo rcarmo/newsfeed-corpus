@@ -9,7 +9,7 @@ from asyncio import get_event_loop, set_event_loop_policy
 from motor.motor_asyncio import AsyncIOMotorClient
 from aiozmq.rpc import AttrHandler, serve_pipeline, method
 from uvloop import EventLoopPolicy
-from config import ITEM_SOCKET, log, DATABASE_NAME, MONGO_SERVER
+from config import ENTRY_PARSER, log, DATABASE_NAME, MONGO_SERVER, get_profile
 from feedparser import parse as feed_parse
 from bs4 import BeautifulSoup
 from langdetect import detect
@@ -76,6 +76,10 @@ class Handler(AttrHandler):
         self.database = db
 
     @method
+    async def profile(self):
+        return get_profile()
+
+    @method
     async def parse(self, url, text):
         """Parse a feed into its constituent entries"""
 
@@ -105,8 +109,8 @@ class Handler(AttrHandler):
 async def server(database):
     """Server pipeline"""
 
-    log.info("Server starting")
-    listener = await serve_pipeline(Handler(database), bind=ITEM_SOCKET)
+    log.info("RPC Server starting")
+    listener = await serve_pipeline(Handler(database), bind=ENTRY_PARSER)
     await listener.wait_closed()
 
 
@@ -117,7 +121,10 @@ def main():
     conn = AsyncIOMotorClient(MONGO_SERVER)
     database = conn[DATABASE_NAME]
     loop = get_event_loop()
-    loop.run_until_complete(server(database))
+    try:
+        loop.run_until_complete(server(database))
+    finally:
+        loop.close()
 
 if __name__ == '__main__':
     main()

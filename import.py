@@ -34,7 +34,7 @@ def update_database(db, filename):
     for feed in feeds_from_opml(filename):
         if not feeds.find_one({'url': feed['url']}):
             log.debug("Inserting %s" % feed)
-            feed['_id'] = feed['url']
+            #feed['_id'] = feed['url']
             feed['created'] = datetime.now()
             feeds.insert_one(feed)
 
