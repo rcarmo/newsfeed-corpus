@@ -11,7 +11,7 @@ serve:
 	docker-compose up
 
 # Build the base container when we update dependencies
-deps:
+build:
 	docker-compose build
 
 # Install deps locally for REPL
@@ -19,5 +19,6 @@ host-deps:
 	pip install -U -r requirements.txt
 
 clean:
+	-rm -f *.pyc
 	-docker rm -v $$(docker ps -a -q -f status=exited)
 	-docker rmi $$(docker images -q -f dangling=true)
