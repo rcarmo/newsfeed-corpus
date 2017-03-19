@@ -9,8 +9,9 @@ from pstats import Stats
 
 FETCH_INTERVAL = int(environ.get('FETCH_INTERVAL', 3600))
 CHECK_INTERVAL = int(environ.get('CHECK_INTERVAL', 900))
-MAX_CONCURRENT_REQUESTS = int(environ.get('MAX_CONCURRENT_REQUESTS',100))
+MAX_CONCURRENT_REQUESTS = int(environ.get('MAX_CONCURRENT_REQUESTS', 100))
 MONGO_SERVER = environ.get('MONGO_SERVER', 'localhost:27017')
+REDIS_SERVER = environ.get('REDIS_SERVER', 'localhost:6379')
 DATABASE_NAME = environ.get('DATABASE_NAME', 'feeds')
 DATE_FORMAT = '%Y-%m-%d %H:%M:%S'
 FEED_FETCHER = environ.get('FEED_FETCHER', 'tcp://127.0.0.1:4674')
