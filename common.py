@@ -24,9 +24,9 @@ async def connect_queue():
 
 async def enqueue(server, queue_name, data):
     """Enqueue an object in a given redis queue"""
-    return await server.lpush(queue_name, dumps(data, default=json_util.default))
+    return await server.rpush(queue_name, dumps(data, default=json_util.default))
 
 async def dequeue(server, queue_name):
     """Blocking dequeue from Redis"""
-    data = await server.rpop(queue_name)
+    _, data = await server.blpop(queue_name, 0)
     return loads(data, object_hook=json_util.object_hook)
