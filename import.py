@@ -3,9 +3,6 @@
 """OPML importer"""
 
 from time import time, sleep, strftime
-from base64 import urlsafe_b64encode
-from urllib.parse import urlparse
-from hashlib import sha256
 from asyncio import get_event_loop, Semaphore, gather, ensure_future
 from aiohttp import ClientSession
 from xml.etree import ElementTree
@@ -14,14 +11,7 @@ from pymongo import MongoClient, ASCENDING, DESCENDING
 from pymongo.errors import DuplicateKeyError
 from datetime import datetime
 from config import log, FETCH_INTERVAL, MONGO_SERVER, DATABASE_NAME, DATE_FORMAT
-
-
-def safe_id(url):
-    fragments = urlparse(url)
-    safe = fragments.netloc + fragments.path.replace('/', '_').replace('+', '-')
-    if fragments.params or fragments.query:
-        safe += sha256(bytes(url,'utf-8')).hexdigest()
-    return safe
+from common import safe_id
 
 
 def feeds_from_opml(filename):
