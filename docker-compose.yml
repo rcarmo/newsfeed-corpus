@@ -6,16 +6,22 @@ services:
       - "6379:6379"
     logging:
       driver: "none"
+    environment:
+      - "constraint:node.role==master"
   db:
     image: mongo:3.4
     ports: 
       - "27017:27017"
     logging:
       driver: "none"
+    environment:
+      - "constraint:node.role==master"
   importer:
     build: .
     env_file: 
       - ENV
+    environment:
+      - "constraint:node.role==worker"
     volumes:
       - .:/app
     links:
@@ -27,6 +33,8 @@ services:
     build: .
     env_file: 
       - ENV
+    environment:
+      - "constraint:node.role==worker"
     volumes:
       - .:/app
     links:
@@ -38,6 +46,8 @@ services:
     build: .
     env_file: 
       - ENV
+    environment:
+      - "constraint:node.role==worker"
     volumes:
       - .:/app
     links:
@@ -49,6 +59,8 @@ services:
     build: .
     env_file: 
       - ENV
+    environment:
+      - "constraint:node.role==worker"
     volumes:
       - .:/app
     links:
