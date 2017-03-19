@@ -14,7 +14,7 @@ This is the "dumb" part of the pipeline -- the corpus is fed into [Azure ML][aml
 
 ## Architecture
 
-This is a set of independent worker processes written in Python 3.5:
+This is a set of independent worker processes written in Python 3.6:
 
 * [x] `import.py` is a one-shot OPML importer
 * [x] `fetcher.py` fetches feeds and stores them on DocumentDB/MongoDB
@@ -22,10 +22,11 @@ This is a set of independent worker processes written in Python 3.5:
 * [ ] `api.py` provides a REST API to retrieve recent items
 * [ ] `topics.py` does topic detection
 
-Processes are written to leverage `asyncio/uvloop`  and talk via [0MQ][0mq], so they can be deployed on separate machines. [piku][piku] is currently used for deployment, but packaging and deploying them using Docker and [alpine-python][ap] is trivial.
+Processes are written to leverage `asyncio/uvloop` and interact via [Redis][redis] (previously they interacted via [ZeroMQ][0mq], but one of my goals is to deploy this on Swarm and an Azure VM scaleset). A Docker compose file is supplied for running the entire stack locally.
 
 [0mq]: https://github.com/aio-libs/aiozmq
 [csa]: https://www.microsoft.com/cognitive-services
 [aml]: https://studio.azureml.net
 [ap]: github.com/rcarmo/alpine-python/
 [piku]: https://github.com/rcarmo/piku
+[redis]: http://redis.io
