@@ -6,13 +6,14 @@ from time import mktime
 from datetime import datetime
 from hashlib import sha1
 from asyncio import get_event_loop, set_event_loop_policy
+from traceback import format_exc
 from motor.motor_asyncio import AsyncIOMotorClient
-from aiozmq.rpc import AttrHandler, serve_pipeline, method
 from uvloop import EventLoopPolicy
-from config import ENTRY_PARSER, log, DATABASE_NAME, MONGO_SERVER, get_profile
 from feedparser import parse as feed_parse
 from bs4 import BeautifulSoup
 from langdetect import detect
+from common import connect_queue, dequeue, enqueue, safe_id
+from config import DATABASE_NAME, MONGO_SERVER, get_profile, log
 
 
 def get_entry_content(entry):
@@ -69,49 +70,46 @@ def get_plaintext(html):
     return soup.get_text()
 
 
-class Handler(AttrHandler):
-    """0MQ handler"""
+async def parse(database, feed):
+    """Parse a feed into its constituent entries"""
 
-    def __init__(self, db):
-        self.database = db
+    result = feed_parse(feed['raw'])
+    if not len(result.entries):
+        log.info('%s: No valid entries', feed['_id'])
+        return
+    else:
+        log.info('%s: %d entries', feed['_id'], len(result.entries))
+        # TODO: turn this into a bulk insert
+        for entry in result.entries:
+            log.debug(entry.link)
+            when = get_entry_date(entry)
+            body = get_entry_content(entry)
+            plaintext = entry.title + " " + get_plaintext(body)
+            await database.entries.update_one({'_id': safe_id(entry.link)},
+                                              {'$set': {"date": when,
+                                                        "title": entry.title,
+                                                        "body": body,
+                                                        "plaintext": plaintext,
+                                                        "lang": detect(plaintext),
+                                                        "url": entry.link}},
+                                              upsert=True)
 
-    @method
-    async def profile(self):
-        return get_profile()
 
-    @method
-    async def parse(self, url, text):
-        """Parse a feed into its constituent entries"""
+async def item_handler(database):
+    """Break down feeds into individual items"""
 
-        log.info("Parsing %s", url)
-        result = feed_parse(text)
-        if not len(result.entries):
-            log.info('%s: No valid entries', url)
-            return
-        else:
-            log.info('%s: %d entries', url, len(result.entries))
-            # TODO: turn this into a bulk insert
-            for entry in result.entries:
-                log.debug(entry.link)
-                when = get_entry_date(entry)
-                body = get_entry_content(entry)
-                plaintext = entry.title + " " + get_plaintext(body)
-
-                await self.database.entries.update_one({'_id': entry.link},
-                                                       {'$set': {"date": when,
-                                                                 "title": entry.title,
-                                                                 "body": body,
-                                                                 "plaintext": plaintext,
-                                                                 "lang": detect(plaintext),
-                                                                 "url": entry.link}},
-                                                       upsert=True)
-
-async def server(database):
-    """Server pipeline"""
-
-    log.info("RPC Server starting")
-    listener = await serve_pipeline(Handler(database), bind=ENTRY_PARSER)
-    await listener.wait_closed()
+    queue = await connect_queue()
+    log.info("Beginning run.")
+    while True:
+        try:
+            job = await(dequeue(queue, 'parser'))
+            feed = await database.feeds.find_one({'_id': job['_id']})
+            await parse(database, feed)
+        except Exception:
+            log.error(format_exc())
+            break
+    queue.close()
+    await queue.wait_closed()
 
 
 def main():
@@ -122,7 +120,7 @@ def main():
     database = conn[DATABASE_NAME]
     loop = get_event_loop()
     try:
-        loop.run_until_complete(server(database))
+        loop.run_until_complete(item_handler(database))
     finally:
         loop.close()
 

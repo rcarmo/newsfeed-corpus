@@ -45,3 +45,14 @@ services:
       - redis
     working_dir: /app
     command: python fetcher.py
+  parser:
+    build: .
+    env_file: 
+      - ENV
+    volumes:
+      - .:/app
+    links:
+      - db
+      - redis
+    working_dir: /app
+    command: python parser.py
