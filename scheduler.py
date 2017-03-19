@@ -7,31 +7,39 @@ from asyncio import get_event_loop, ensure_future, set_event_loop_policy, sleep
 from uvloop import EventLoopPolicy
 from motor.motor_asyncio import AsyncIOMotorClient
 from config import CHECK_INTERVAL, DATABASE_NAME, FETCH_INTERVAL, MONGO_SERVER, log
-from common import AsyncIOQueue
+from common import connect_queue, enqueue
 
 async def scan_feeds(database):
     """Enumerate all feeds and queue them for fetching"""
-    queue = AsyncIOQueue()
+
+    # let importer run first while we're testing
+    await sleep(5)
+
+    log.info("Beginning run.")
 
     while True:
         threshold = datetime.now() - timedelta(seconds=FETCH_INTERVAL)
+        queue = await connect_queue()
         log.info("Scanning feed list.")
         async for feed in database.feeds.find({}):
             url = feed['url']
-            log.debug("Checking %s", url)
+            #log.debug("Checking %s", url)
             last_fetched = feed.get('last_fetched', threshold)
             if last_fetched <= threshold:
                 log.debug("Queueing %s", url)
-                await queue.enqueue("fetcher", {
-                    "url": url,
+                await enqueue(queue, "fetcher", {
+                    "_id": feed['_id'],
                     "scheduled_at": datetime.now()
                 })
+        queue.close()
+        await queue.wait_closed()
         log.info("Run complete, sleeping %ds...", CHECK_INTERVAL)
         await sleep(CHECK_INTERVAL)
 
 
 def main():
     """Setup event loop and start coroutines"""
+
     set_event_loop_policy(EventLoopPolicy())
     loop = get_event_loop()
 

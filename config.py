@@ -14,8 +14,6 @@ MONGO_SERVER = environ.get('MONGO_SERVER', 'localhost:27017')
 REDIS_SERVER = environ.get('REDIS_SERVER', 'localhost:6379')
 DATABASE_NAME = environ.get('DATABASE_NAME', 'feeds')
 DATE_FORMAT = '%Y-%m-%d %H:%M:%S'
-FEED_FETCHER = environ.get('FEED_FETCHER', 'tcp://127.0.0.1:4674')
-ENTRY_PARSER = environ.get('ENTRY_PARSER', 'tcp://127.0.0.1:4675')
 PROFILER = (environ.get('PROFILER', 'true').lower() == "true")
 
 if PROFILER:
@@ -73,5 +71,5 @@ dictConfig({
 log = getLogger()
 
 log.info("Configuration loaded.")
-for k in sorted(environ.keys()):
-    log.debug("{}={}".format(k,environ[k]))
+#for k in sorted(environ.keys()):
+#    log.debug("{}={}".format(k,environ[k]))

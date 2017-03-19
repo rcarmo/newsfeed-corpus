@@ -9,31 +9,18 @@ from aiozmq.rpc import connect_pipeline, AttrHandler, serve_pipeline, method
 from traceback import format_exc
 from uvloop import EventLoopPolicy
 from aiohttp import ClientSession
+from aioredis import create_redis
 from motor.motor_asyncio import AsyncIOMotorClient
-from config import log, CHECK_INTERVAL, FETCH_INTERVAL, MONGO_SERVER, DATABASE_NAME, ENTRY_PARSER,  FEED_FETCHER, MAX_CONCURRENT_REQUESTS, get_profile
+from config import log, CHECK_INTERVAL, FETCH_INTERVAL, MONGO_SERVER, DATABASE_NAME, MAX_CONCURRENT_REQUESTS
+from common import connect_queue, dequeue, enqueue
+from bson.objectid import ObjectId   
 
-class Handler(AttrHandler):
-    """0MQ handler"""
-
-    @method
-    async def profile(self):
-        return get_profile()
-
-
-async def server():
-    """Server pipeline"""
-
-    log.info("RPC Server starting")
-    listener = await serve_pipeline(Handler(), bind=FEED_FETCHER)
-    await listener.wait_closed()
-
-
-async def fetch_one(session, feed, client, database):
+async def fetch_one(session, feed, client, database, queue):
     """Fetch a single feed"""
 
     url = feed['url']
     checksum = feed.get('checksum', None)
-    notify = False
+    changed = False
     headers = {}
 
     log.debug("Fetching %s", url)
@@ -52,7 +39,7 @@ async def fetch_one(session, feed, client, database):
             }
             if response.status == 200:
                 if 'checksum' not in feed or feed['checksum'] != checksum:
-                    notify = True
+                    changed = True
                 update['raw'] = text
                 update['checksum'] = sha1(text.encode('utf-8')).hexdigest()
 
@@ -64,10 +51,12 @@ async def fetch_one(session, feed, client, database):
 
             await database.feeds.update_one({'url': url}, {'$set': update})
 
-            if notify:
-                log.debug("Notifying...")
-                await client.notify.parse(url, text)
-
+            if changed:
+                log.debug("Notifying...")  
+                await enqueue(queue, 'parser', {
+                    "_id": feed['_id'],
+                    "scheduled_at": datetime.now()
+                })
             return feed, response.status
 
     except Exception as e:
@@ -78,48 +67,53 @@ async def fetch_one(session, feed, client, database):
         return feed, 0
 
 
-async def throttle(sem, session, feed, client, database):
+async def throttle(sem, session, feed, client, database, queue):
     """Throttle number of simultaneous requests"""
 
     async with sem:
-        res = await fetch_one(session, feed, client, database)
+        res = await fetch_one(session, feed, client, database, queue)
         log.info("%s: %d", res[0]['url'], res[1])
 
 
 async def fetcher(database):
     """Fetch all the feeds"""
 
+    client = ClientSession()
     sem = Semaphore(MAX_CONCURRENT_REQUESTS)
 
+    queue = await connect_queue()
     while True:
-        client = await connect_pipeline(connect=ENTRY_PARSER)
+        log.info("Beginning run.")
         tasks = []
         threshold = datetime.now() - timedelta(seconds=FETCH_INTERVAL)
-
         async with ClientSession() as session:
-            log.info("Beginning run.")
-            async for feed in database.feeds.find({}):
-                log.debug("Checking %s", feed['url'])
-                last_fetched = feed.get('last_fetched', threshold)
-                if last_fetched <= threshold:
-                    task = ensure_future(throttle(sem, session, feed, client, database))
-                    tasks.append(task)
-
+            while True:
+                try:
+                    job = await dequeue(queue, 'fetcher')
+                    feed = await database.feeds.find_one({'_id': job['_id']})
+                    last_fetched = feed.get('last_fetched', threshold)
+                    if last_fetched <= threshold:
+                        task = ensure_future(throttle(sem, session, feed, client, database, queue))
+                        tasks.append(task)
+                except Exception as e:
+                    log.error(e)
+                    break
             responses = gather(*tasks)
             await responses
             log.info("Run complete, sleeping %ds...", CHECK_INTERVAL)
             await sleep(CHECK_INTERVAL)
+    queue.close()
+    await queue.wait_closed()
 
 
 def main():
     """Setup coroutines and kickstart fetcher"""
     set_event_loop_policy(EventLoopPolicy())
 
-    conn = AsyncIOMotorClient(MONGO_SERVER)
-    database = conn[DATABASE_NAME]
+    motor = AsyncIOMotorClient(MONGO_SERVER)
+    database = motor[DATABASE_NAME]
 
     loop = get_event_loop()
-    ensure_future(server())
     ensure_future(fetcher(database))
     try:
         loop.run_forever()

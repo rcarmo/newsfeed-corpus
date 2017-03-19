@@ -1,30 +1,47 @@
-scheduler:
-  build: .
-  env_file: 
-    - ENV
-  volumes:
-    - .:/app
-  links:
-    - db
-    - redis
-  working_dir: /app
-  command: python scheduler.py
-fetcher:
-  build: .
-  env_file: 
-    - ENV
-  volumes:
-    - .:/app
-  links:
-    - db
-    - redis
-  working_dir: /app
-  command: python fetcher.py
-redis:
-  image: redis:latest
-  ports:
-    - "6379:6379"
-db:
-  image: mongo:3.4
-  ports: 
-    - "27017:27017"
+version: '2'
+services:
+  redis:
+    image: redis:3.2.8
+    ports:
+      - "6379:6379"
+    logging:
+      driver: "none"
+  db:
+    image: mongo:3.4
+    ports: 
+      - "27017:27017"
+    logging:
+      driver: "none"
+  importer:
+    build: .
+    env_file: 
+      - ENV
+    volumes:
+      - .:/app
+    links:
+      - db
+      - redis
+    working_dir: /app
+    command: python import.py
+  scheduler:
+    build: .
+    env_file: 
+      - ENV
+    volumes:
+      - .:/app
+    links:
+      - db
+      - redis
+    working_dir: /app
+    command: python scheduler.py
+  fetcher:
+    build: .
+    env_file: 
+      - ENV
+    volumes:
+      - .:/app
+    links:
+      - db
+      - redis
+    working_dir: /app
+    command: python fetcher.py

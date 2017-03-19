@@ -17,3 +17,7 @@ deps:
 # Install deps locally for REPL
 host-deps:
 	pip install -U -r requirements.txt
+
+clean:
+	-docker rm -v $$(docker ps -a -q -f status=exited)
+	-docker rmi $$(docker images -q -f dangling=true)
