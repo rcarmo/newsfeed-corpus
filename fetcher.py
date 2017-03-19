@@ -9,8 +9,8 @@ from traceback import format_exc
 from uvloop import EventLoopPolicy
 from aiohttp import ClientSession, TCPConnector
 from motor.motor_asyncio import AsyncIOMotorClient
-from config import log, CHECK_INTERVAL, FETCH_INTERVAL, MONGO_SERVER, DATABASE_NAME, MAX_CONCURRENT_REQUESTS
 from common import connect_queue, dequeue, enqueue
+from config import log, CHECK_INTERVAL, FETCH_INTERVAL, MONGO_SERVER, DATABASE_NAME, MAX_CONCURRENT_REQUESTS
 
 async def fetch_one(session, feed, client, database, queue):
     """Fetch a single feed"""
@@ -93,8 +93,8 @@ async def fetcher(database):
                     if last_fetched <= threshold:
                         task = ensure_future(throttle(sem, session, feed, client, database, queue))
                         tasks.append(task)
-                except Exception as e:
-                    log.error(e)
+                except Exception:
+                    log.error(format_exc())
                     break
             responses = gather(*tasks)
             await responses
