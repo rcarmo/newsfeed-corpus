@@ -8,7 +8,7 @@ from asyncio import get_event_loop, Semaphore, gather, ensure_future, set_event_
 from aiozmq.rpc import connect_pipeline, AttrHandler, serve_pipeline, method
 from traceback import format_exc
 from uvloop import EventLoopPolicy
-from aiohttp import ClientSession
+from aiohttp import ClientSession, TCPConnector
 from aioredis import create_redis
 from motor.motor_asyncio import AsyncIOMotorClient
 from config import log, CHECK_INTERVAL, FETCH_INTERVAL, MONGO_SERVER, DATABASE_NAME, MAX_CONCURRENT_REQUESTS
@@ -78,7 +78,8 @@ async def throttle(sem, session, feed, client, database, queue):
 async def fetcher(database):
     """Fetch all the feeds"""
 
-    client = ClientSession()
+    # disable certificate validation to cope with self-signed certificates in some feed back-ends
+    client = ClientSession(connector=TCPConnector(verify_ssl=False))
     sem = Semaphore(MAX_CONCURRENT_REQUESTS)
 
     queue = await connect_queue()
