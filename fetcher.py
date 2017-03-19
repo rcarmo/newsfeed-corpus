@@ -5,15 +5,12 @@
 from datetime import datetime, timedelta
 from hashlib import sha1
 from asyncio import get_event_loop, Semaphore, gather, ensure_future, set_event_loop_policy, sleep
-from aiozmq.rpc import connect_pipeline, AttrHandler, serve_pipeline, method
 from traceback import format_exc
 from uvloop import EventLoopPolicy
 from aiohttp import ClientSession, TCPConnector
-from aioredis import create_redis
 from motor.motor_asyncio import AsyncIOMotorClient
 from config import log, CHECK_INTERVAL, FETCH_INTERVAL, MONGO_SERVER, DATABASE_NAME, MAX_CONCURRENT_REQUESTS
 from common import connect_queue, dequeue, enqueue
-from bson.objectid import ObjectId   
 
 async def fetch_one(session, feed, client, database, queue):
     """Fetch a single feed"""
