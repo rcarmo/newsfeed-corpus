@@ -30,8 +30,9 @@ async def fetch_one(session, feed, client, database, queue):
     try:
         async with session.get(url, headers=headers) as response:
             text = await response.text()
+            # TODO: check behavior for 301/302
             update = {
-                'last_status': response.status, # TODO: check behavior for 301/302
+                'last_status': response.status,
                 'last_fetched': datetime.now(),
             }
             if response.status == 200:
@@ -49,14 +50,13 @@ async def fetch_one(session, feed, client, database, queue):
             await database.feeds.update_one({'url': url}, {'$set': update})
 
             if changed:
-                log.debug("Notifying...")  
                 await enqueue(queue, 'parser', {
                     "_id": feed['_id'],
                     "scheduled_at": datetime.now()
                 })
             return feed, response.status
 
-    except Exception as e:
+    except Exception:
         log.error(format_exc())
         await database.feeds.update_one({'url': url},
                                         {'$set': {'last_status': 0,
