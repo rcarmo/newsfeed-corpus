@@ -8,8 +8,11 @@ fetcher:
     - .:/app
   links:
     - db
+    - redis
   working_dir: /app
   command: python fetcher.py
+redis:
+  image: redis:latest
 db:
   image: mongo:3.4
   ports: 

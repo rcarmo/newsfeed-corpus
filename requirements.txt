@@ -10,3 +10,5 @@ feedparser
 beautifulsoup4
 langdetect
 pycallgraph
+hiredis
+aioredis

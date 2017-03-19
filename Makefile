@@ -6,8 +6,14 @@ FEED_FETCHER?=tcp://127.0.0.1:4674
 ENTRY_PARSER?=tcp://127.0.0.1:4675
 PORT?=8000
 
-fetch:
-	python fetcher.py
+# Run the stack locally
+serve:
+	docker-compose up
 
+# Build the base container when we update dependencies
 deps:
-	pip install --retries 10 -U -r requirements.txt
+	docker-compose build
+
+# Install deps locally for REPL
+host-deps:
+	pip install -U -r requirements.txt
