@@ -12,3 +12,4 @@ langdetect
 pycallgraph
 hiredis
 aioredis
+mako

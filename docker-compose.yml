@@ -8,6 +8,7 @@ services:
       driver: "none"
     environment:
       - "constraint:node.role==master"
+
   db:
     image: mongo:3.4
     ports: 
@@ -16,6 +17,7 @@ services:
       driver: "none"
     environment:
       - "constraint:node.role==master"
+
   importer:
     build: .
     env_file: 
@@ -29,6 +31,7 @@ services:
       - redis
     working_dir: /app
     command: python import.py
+
   scheduler:
     build: .
     env_file: 
@@ -42,6 +45,7 @@ services:
       - redis
     working_dir: /app
     command: python scheduler.py
+
   fetcher:
     build: .
     env_file: 
@@ -55,6 +59,7 @@ services:
       - redis
     working_dir: /app
     command: python fetcher.py
+
   parser:
     build: .
     env_file: 
@@ -68,3 +73,19 @@ services:
       - redis
     working_dir: /app
     command: python parser.py
+
+  web:  
+    build: .
+    ports:
+      - "8000:8000"
+    env_file: 
+      - ENV
+    environment:
+      - "constraint:node.role==master"
+    volumes:
+      - .:/app
+    links:
+      - db
+      - redis
+    working_dir: /app
+    command: python web.py

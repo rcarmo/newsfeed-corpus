@@ -1,14 +1,15 @@
 """ Configuration """
 
-from os import environ
-from io import StringIO
+from cProfile import Profile
 from logging import getLogger
 from logging.config import dictConfig
-from cProfile import Profile
-from pstats import Stats
+from os import environ
 
 FETCH_INTERVAL = int(environ.get('FETCH_INTERVAL', 3600))
 CHECK_INTERVAL = int(environ.get('CHECK_INTERVAL', 900))
+HTTP_PORT = int(environ.get('HTTP_PORT', 8000))
+BIND_ADDRESS = environ.get('BIND_ADDRESS','0.0.0.0')
+DEBUG = environ.get('DEBUG','False').lower() == 'true',
 MAX_CONCURRENT_REQUESTS = int(environ.get('MAX_CONCURRENT_REQUESTS', 100))
 MONGO_SERVER = environ.get('MONGO_SERVER', 'localhost:27017')
 REDIS_SERVER = environ.get('REDIS_SERVER', 'localhost:6379')
@@ -61,9 +62,13 @@ dictConfig({
         }
     },
     "loggers": {
+        "sanic.static": {
+            "level"   : "INFO",
+            "handlers": ["console"]
+        }
     },
     "root": {
-        "level"   : "DEBUG" if environ.get('DEBUG','True').lower() == 'true' else "INFO",
+        "level"   : "DEBUG" if DEBUG else "INFO",
         "handlers": ["console"]
     }
 })
