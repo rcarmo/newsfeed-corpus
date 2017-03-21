@@ -7,6 +7,7 @@ from mako.template import Template
 from sanic import Sanic
 from sanic.exceptions import FileNotFound, NotFound
 from sanic.response import json, text, html
+from multiprocessing import cpu_count
 from config import log, DEBUG, BIND_ADDRESS, HTTP_PORT
 
 app = Sanic(__name__)
@@ -23,7 +24,5 @@ async def get_name(req):
 
 app.static('/', './static')
 
-if __name__ == '__main__':
-    log.debug("Beginning run.")
-    #set_event_loop_policy(EventLoopPolicy())
-    app.run(host=BIND_ADDRESS, port=HTTP_PORT, debug=DEBUG)
+log.debug("Beginning run.")
+app.run(host=BIND_ADDRESS, port=HTTP_PORT, workers=cpu_count(), debug=DEBUG)

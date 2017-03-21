@@ -9,13 +9,13 @@ FETCH_INTERVAL = int(environ.get('FETCH_INTERVAL', 3600))
 CHECK_INTERVAL = int(environ.get('CHECK_INTERVAL', 900))
 HTTP_PORT = int(environ.get('HTTP_PORT', 8000))
 BIND_ADDRESS = environ.get('BIND_ADDRESS','0.0.0.0')
-DEBUG = environ.get('DEBUG','False').lower() == 'true',
+DEBUG = environ.get('DEBUG','False').lower() == 'true'
 MAX_CONCURRENT_REQUESTS = int(environ.get('MAX_CONCURRENT_REQUESTS', 100))
 MONGO_SERVER = environ.get('MONGO_SERVER', 'localhost:27017')
 REDIS_SERVER = environ.get('REDIS_SERVER', 'localhost:6379')
 DATABASE_NAME = environ.get('DATABASE_NAME', 'feeds')
 DATE_FORMAT = '%Y-%m-%d %H:%M:%S'
-PROFILER = (environ.get('PROFILER', 'true').lower() == "true")
+PROFILER = environ.get('PROFILER','False').lower() == "true"
 
 if PROFILER:
     profiler = Profile()
@@ -53,12 +53,6 @@ dictConfig({
             "formatter": "service",
             "level"    : "DEBUG",
             "stream"   : "ext://sys.stdout"
-        },
-        "ram": {
-            "class"    : "logging.handlers.MemoryHandler",
-            "formatter": "http",
-            "level"    : "WARNING",
-            "capacity" : 200
         }
     },
     "loggers": {
