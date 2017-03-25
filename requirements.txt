@@ -13,3 +13,6 @@ pycallgraph
 hiredis
 aioredis
 mako
+nltk
+stop-words
+gensim

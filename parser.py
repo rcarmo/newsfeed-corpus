@@ -14,7 +14,17 @@ from bs4 import BeautifulSoup
 from langdetect import detect
 from common import connect_queue, dequeue, enqueue, safe_id
 from config import DATABASE_NAME, MONGO_SERVER, get_profile, log
+from nltk.tokenize import RegexpTokenizer
+from nltk.corpus import stopwords
+from nltk.stem.porter import PorterStemmer
+from nltk.stem import RSLPStemmer
+from gensim import corpora, models
 
+STOP_WORDS = {'en': stopwords.words('english'), 
+              'pt': stopwords.words('portuguese')}
+
+STEMMERS = {'en': PorterStemmer(),
+            'pt': RSLPStemmer()}
 
 def get_entry_content(entry):
     """Select the best content from an entry"""
@@ -70,6 +80,27 @@ def get_plaintext(html):
     return soup.get_text()
 
 
+def tokenize(plaintext, language):
+    try:
+        stop_words = STOP_WORDS[language]
+        stemmer = STEMMERS[language]
+    except KeyError:
+        log.error(format_exc())
+        return
+    # Tokenize, remove stop words and stem
+    tokenizer = RegexpTokenizer(r'\w+')
+    tokens = [stemmer.stem(i) for i in tokenizer.tokenize(plaintext.lower()) if not i in stop_words]
+    return tokens
+
+
+def lda(tokens):
+    # Perform Latent Dirchelet Allocation
+    dictionary = corpora.Dictionary(tokens)
+    corpus = [dictionary.doc2bow(token) for token in tokens]
+    lda_model = gensim.models.ldamodel.LdaModel(corpus, num_topics=3, id2word=dictionary, passes=20)
+    return lda_model
+
+
 async def parse(database, feed):
     """Parse a feed into its constituent entries"""
 
@@ -85,12 +116,14 @@ async def parse(database, feed):
             when = get_entry_date(entry)
             body = get_entry_content(entry)
             plaintext = entry.title + " " + get_plaintext(body)
+            lang = detect(plaintext)
             await database.entries.update_one({'_id': safe_id(entry.link)},
                                               {'$set': {"date": when,
                                                         "title": entry.title,
                                                         "body": body,
                                                         "plaintext": plaintext,
-                                                        "lang": detect(plaintext),
+                                                        "lang": lang,
+                                                        "tokens": tokenize(plaintext, lang),
                                                         "url": entry.link}},
                                               upsert=True)
 
