@@ -1,3 +1,7 @@
+#!/bin/env python3
+# Rui Carmo, 2017
+# Miscellaneous helpers for NLTK
+
 from operator import itemgetter
 from nltk import FreqDist
 from nltk.corpus import stopwords
@@ -7,17 +11,22 @@ from unicodedata import category
 
 # RAKE extractor - requires python -m nltk.downloader stopwords punkt 
 
+# Build a full unicode punctuation dictionary based on glyph category 
+# (strings.punctuation doesn't cut it)
 PUNCTUATION = dict.fromkeys([i for i in range(maxunicode) if category(chr(i)).startswith('P')])
 
 def _extract_phrases(sentences, language="english"):
+    """Extract phrases from a list of sentences"""
+
     def is_punctuation(word):
         return len(word) == 1 and ord(word) in PUNCTUATION
-    
+
     lang_stopwords = set(stopwords.words(language))
 
     phrase_list = []
     for sentence in sentences:
-        # NOTE: word_tokenize can't quote cope with rich quotes, so we'll need to clean up after it deals with punctuation
+        # NOTE: word_tokenize can't quote cope with rich quotes, 
+        # so we'll need to clean up after it deals with punctuation
         words = map(lambda x: "|" if x in lang_stopwords else x, word_tokenize(sentence.lower(), language))
         phrase = []
         for word in words:
@@ -33,8 +42,10 @@ def _extract_phrases(sentences, language="english"):
 
 def _score_words(phrase_list):
     def is_numeric(word):
+        # NOTE: this is a quick and dirty way to cope with multi-digit figures
+        # but will be confused by currency
         try:
-            int(word.replace(',','').replace('.',''))
+            int(word.replace(',', '').replace('.', ''))
             return True
         except ValueError:
             return False
@@ -70,6 +81,7 @@ def _score_phrases(phrase_list, word_scores):
 
 
 def extract_keywords(text, language="en", scores=False):
+    """RAKE extractor"""
     lang = {"en": "english",
             "pt": "portuguese"}[language]
     sentences = sent_tokenize(text, lang)
