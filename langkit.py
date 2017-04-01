@@ -5,9 +5,17 @@
 from operator import itemgetter
 from nltk import FreqDist
 from nltk.corpus import stopwords
-from nltk.tokenize import sent_tokenize, word_tokenize
+from nltk.tokenize import sent_tokenize, word_tokenize, RegexpTokenizer
+from nltk.stem.porter import PorterStemmer
+from nltk.stem import RSLPStemmer
 from sys import maxunicode
 from unicodedata import category
+
+STOP_WORDS = {'en': stopwords.words('english'), 
+              'pt': stopwords.words('portuguese')}
+
+STEMMERS = {'en': PorterStemmer(),
+            'pt': RSLPStemmer()}
 
 # RAKE extractor - requires python -m nltk.downloader stopwords punkt 
 
@@ -86,8 +94,13 @@ def _score_phrases(phrase_list, word_scores):
 def extract_keywords(text, language="en", scores=False):
     """RAKE extractor"""
 
-    lang = {"en": "english",
-            "pt": "portuguese"}[language]
+    try:
+        lang = {"en": "english",
+                "pt": "portuguese"}[language]
+    except KeyError:
+        log.error(format_exc())
+        return
+                
     sentences = sent_tokenize(text, lang)
     phrase_list = _extract_phrases(sentences, lang)
     word_scores = _score_words(phrase_list)
@@ -97,3 +110,18 @@ def extract_keywords(text, language="en", scores=False):
         return sorted_scores
     else:
         return list(map(lambda x: x[0], sorted_scores))
+
+
+def tokenize(plaintext, language):
+    """tokenize into stemmed tokens"""
+
+    try:
+        stop_words = STOP_WORDS[language]
+        stemmer = STEMMERS[language]
+    except KeyError:
+        log.error(format_exc())
+        return
+    # Tokenize, remove stop words and stem
+    tokenizer = RegexpTokenizer(r'\w+')
+    tokens = [stemmer.stem(i) for i in tokenizer.tokenize(plaintext.lower()) if not i in stop_words]
+    return tokens

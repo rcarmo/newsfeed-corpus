@@ -16,3 +16,4 @@ mako
 nltk
 stop-words
 gensim
+pattern3
