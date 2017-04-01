@@ -10,9 +10,13 @@ from nltk.stem.porter import PorterStemmer
 from nltk.stem import RSLPStemmer
 from sys import maxunicode
 from unicodedata import category
+from logging import getLogger
+from traceback import format_exc
 
-STOP_WORDS = {'en': stopwords.words('english'), 
-              'pt': stopwords.words('portuguese')}
+log = getLogger()
+
+STOPWORDS = {'en': stopwords.words('english'), 
+             'pt': stopwords.words('portuguese')}
 
 STEMMERS = {'en': PorterStemmer(),
             'pt': RSLPStemmer()}
@@ -116,11 +120,12 @@ def tokenize(plaintext, language):
     """tokenize into stemmed tokens"""
 
     try:
-        stop_words = STOP_WORDS[language]
+        stop_words = STOPWORDS[language]
         stemmer = STEMMERS[language]
     except KeyError:
         log.error(format_exc())
         return
+
     # Tokenize, remove stop words and stem
     tokenizer = RegexpTokenizer(r'\w+')
     tokens = [stemmer.stem(i) for i in tokenizer.tokenize(plaintext.lower()) if not i in stop_words]

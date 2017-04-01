@@ -12,7 +12,7 @@ from uvloop import EventLoopPolicy
 from feedparser import parse as feed_parse
 from bs4 import BeautifulSoup
 from langdetect import detect
-from common import connect_queue, dequeue, enqueue, safe_id
+from common import connect_redis, dequeue, enqueue, safe_id
 from config import DATABASE_NAME, MONGO_SERVER, get_profile, log
 from gensim import corpora, models
 from langkit import tokenize, extract_keywords
@@ -96,14 +96,22 @@ async def parse(database, feed):
             body = get_entry_content(entry)
             plaintext = entry.title + " " + get_plaintext(body)
             lang = detect(plaintext)
+
+            try:
+                keywords = extract_keywords(plaintext, lang, scores=True)[:10]
+                tokens = list(set(tokenize(plaintext, lang)))
+            except KeyError:
+                keywords = None
+                tokens = None
+
             await database.entries.update_one({'_id': safe_id(entry.link)},
                                               {'$set': {"date": when,
                                                         "title": entry.title,
                                                         "body": body,
                                                         "plaintext": plaintext,
                                                         "lang": lang,
-                                                        "keywords": extract_keywords(plaintext, lang, scored=True)[:10],
-                                                        "tokens": list(set(tokenize(plaintext, lang))),
+                                                        "keywords": keywords,
+                                                        "tokens": tokens,
                                                         "url": entry.link}},
                                               upsert=True)
 
@@ -111,18 +119,21 @@ async def parse(database, feed):
 async def item_handler(database):
     """Break down feeds into individual items"""
 
-    queue = await connect_queue()
+    redis = await connect_redis()
     log.info("Beginning run.")
     while True:
         try:
-            job = await(dequeue(queue, 'parser'))
+            job = await(dequeue(redis, 'parser'))
+            log.debug(job)
             feed = await database.feeds.find_one({'_id': job['_id']})
-            await parse(database, feed)
+            if feed:
+                await parse(database, feed)
         except Exception:
             log.error(format_exc())
             break
-    queue.close()
-    await queue.wait_closed()
+    await redis.hset(REDIS_NAMESPACE + 'status', 'item_count', await db.items.count())
+    redis.close()
+    await redis.wait_closed()
 
 
 def main():

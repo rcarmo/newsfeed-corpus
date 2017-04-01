@@ -9,7 +9,7 @@ from traceback import format_exc
 from uvloop import EventLoopPolicy
 from aiohttp import ClientSession, TCPConnector
 from motor.motor_asyncio import AsyncIOMotorClient
-from common import connect_queue, dequeue, enqueue
+from common import connect_redis, dequeue, enqueue
 from config import log, CHECK_INTERVAL, FETCH_INTERVAL, MONGO_SERVER, DATABASE_NAME, MAX_CONCURRENT_REQUESTS
 
 async def fetch_one(session, feed, client, database, queue):
@@ -79,7 +79,7 @@ async def fetcher(database):
     client = ClientSession(connector=TCPConnector(verify_ssl=False))
     sem = Semaphore(MAX_CONCURRENT_REQUESTS)
 
-    queue = await connect_queue()
+    queue = await connect_redis()
     while True:
         log.info("Beginning run.")
         tasks = []

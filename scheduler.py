@@ -7,9 +7,9 @@ from asyncio import get_event_loop, ensure_future, set_event_loop_policy, sleep
 from uvloop import EventLoopPolicy
 from motor.motor_asyncio import AsyncIOMotorClient
 from config import CHECK_INTERVAL, DATABASE_NAME, FETCH_INTERVAL, MONGO_SERVER, log
-from common import connect_queue, enqueue
+from common import connect_redis, enqueue, REDIS_NAMESPACE
 
-async def scan_feeds(database):
+async def scan_feeds(db):
     """Enumerate all feeds and queue them for fetching"""
 
     # let importer run first while we're testing
@@ -19,9 +19,10 @@ async def scan_feeds(database):
 
     while True:
         threshold = datetime.now() - timedelta(seconds=FETCH_INTERVAL)
-        queue = await connect_queue()
+        queue = await connect_redis()
         log.info("Scanning feed list.")
-        async for feed in database.feeds.find({}):
+        await queue.hset(REDIS_NAMESPACE + 'status', 'feed_count', await db.feeds.count())
+        async for feed in db.feeds.find({}):
             url = feed['url']
             #log.debug("Checking %s", url)
             last_fetched = feed.get('last_fetched', threshold)
