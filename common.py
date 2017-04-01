@@ -21,9 +21,11 @@ def safe_id(url):
         safe += sha1(bytes(url, 'utf-8')).hexdigest()[6]
     return safe.rstrip('_-')
 
-async def connect_queue():
+async def connect_redis(loop=None):
     """Connect to a Redis server"""
-    return await create_redis(REDIS_SERVER.split(':'), loop=get_event_loop())
+    if not loop:
+        loop = get_event_loop()
+    return await create_redis(REDIS_SERVER.split(':'), loop=loop)
 
 async def enqueue(server, queue_name, data):
     """Enqueue an object in a given redis queue"""
@@ -33,11 +35,3 @@ async def dequeue(server, queue_name):
     """Blocking dequeue from Redis"""
     _, data = await server.blpop(REDIS_NAMESPACE + queue_name, 0)
     return loads(data, object_hook=json_util.object_hook)
-
-async def get_config(server):
-    """Abstract shared config"""
-    return hgetall(REDIS_NAMESPACE + "config")
-
-async def set_config_item(server, item):
-    """Abstract shared config"""
-    return hset(REDIS_NAMESPACE + "config", item)
