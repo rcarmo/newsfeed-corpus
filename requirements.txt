@@ -1,5 +1,6 @@
 aiodns>=1.1.1
 aiohttp>=1.1.6
+aiocache
 ujson
 motor>=1.1
 uvloop>=0.6.7

@@ -12,6 +12,7 @@ from sanic.exceptions import FileNotFound, NotFound
 from sanic.response import json, text, html
 from config import log, DEBUG, BIND_ADDRESS, HTTP_PORT, MONGO_SERVER, DATABASE_NAME
 from common import connect_redis, REDIS_NAMESPACE
+from aiocache import cached, SimpleMemoryCache
 
 app = Sanic(__name__)
 layout = Template(filename='views/layout.tpl')
@@ -47,6 +48,7 @@ async def get_status(req):
 
 @app.route('/feeds/<order>', methods=['GET'])
 @app.route('/feeds/<order>/<last_id>', methods=['GET'])
+@cached(ttl=20)
 async def get_feeds(req, order, last_id=None):
     limit = 50
     fields = {'_id': 1, 'title': 1, 'last_fetched': 1, 'last_status': 1}
