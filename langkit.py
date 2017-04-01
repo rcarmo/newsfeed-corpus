@@ -104,7 +104,7 @@ def extract_keywords(text, language="en", scores=False):
     except KeyError:
         log.error(format_exc())
         return
-                
+
     sentences = sent_tokenize(text, lang)
     phrase_list = _extract_phrases(sentences, lang)
     word_scores = _score_words(phrase_list)
