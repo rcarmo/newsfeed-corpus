@@ -1,3 +1,5 @@
+#!/bin/env python3
+
 """ Web server """
 
 from datetime import datetime
@@ -9,18 +11,22 @@ from sanic.exceptions import FileNotFound, NotFound
 from sanic.response import json, text, html
 from multiprocessing import cpu_count
 from config import log, DEBUG, BIND_ADDRESS, HTTP_PORT
+from common import get_config
 
 app = Sanic(__name__)
 layout = Template(filename='views/layout.tpl')
 
-@app.route('/')
+
+@app.route('/', methods=['GET'])
 async def homepage(req):
     """Main page"""
     return html(layout.render(timestr=datetime.now().strftime("%H:%M:%S.%f")))
 
-@app.route('/test')
+
+@app.route('/test', methods=['GET'])
 async def get_name(req):
-    return text("test") 
+    return text("test")
+
 
 app.static('/', './static')
 
