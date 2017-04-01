@@ -89,3 +89,6 @@ ENV/
 .ropeproject
 
 *.opml
+
+# VS Code
+.vscode
