@@ -65,7 +65,7 @@ app.static('/', './static')
 @app.listener('after_server_start')
 def init_connections(sanic, loop):
     """Bind the database and Redis client to Sanic's event loop."""
-    
+
     global redis, db
     redis = connect_redis()
     motor = AsyncIOMotorClient(MONGO_SERVER, io_loop=loop)
