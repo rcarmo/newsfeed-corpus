@@ -48,7 +48,7 @@
             <i class="material-icons">more_vert</i>
           </button>
           <ul class="mdl-menu mdl-js-menu mdl-js-ripple-effect mdl-menu--bottom-right" for="hdrbtn">
-            <li class="mdl-menu__item"><a href="https://github.com/rcarmo/newsfeed-corpus">About</a></li>
+            <a href="https://github.com/rcarmo/newsfeed-corpus"><li class="mdl-menu__item">About</li></a>
           </ul>
         </div>
       </header>
