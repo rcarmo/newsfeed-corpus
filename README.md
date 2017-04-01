@@ -18,7 +18,7 @@ Things escalated quickly from there on several fronts:
 
 This was originally the "dumb" part of the pipeline -- the corpus was fed into [Azure ML][aml] and the [Cognitive Services APIs][csa] for the nice stuff, so this started out mostly focusing fetching, parsing and filing away feeds.
 
-It's now a rather more complex beast than I originally bargained for, and is currently pushing the envelope on [my Python Docker containers][ap], which now feature Python 3.6.1 atop Alpine Linux `edge`.
+It's now a rather more complex beast than I originally bargained for. Besides acting as a technology demonstrator for a number of things (including odds and ends like how to bundle NLTK datasets inside Docker) it is currently pushing the envelope on [my Python Docker containers][ap], which now feature Python 3.6.1 atop Alpine Linux `edge`.
 
 ### Architecture
 

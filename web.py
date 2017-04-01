@@ -20,13 +20,6 @@ layout = Template(filename='views/layout.tpl')
 redis = None
 db = None
 
-@app.listener('after_server_start')
-def init_connections(sanic, loop):
-    global redis, db
-    redis = connect_redis()
-    motor = AsyncIOMotorClient(MONGO_SERVER, io_loop=loop)
-    db = motor[DATABASE_NAME]
-
 
 @app.route('/', methods=['GET'])
 async def homepage(req):
@@ -36,10 +29,14 @@ async def homepage(req):
 
 @app.route('/test', methods=['GET'])
 async def get_name(req):
+    """Endpoint for front-end load testing using wrk.
+       Reference measurement: 25K requests/s on 4 cores of a 2.9GHz i5"""
     return text("test")
 
 @app.route('/status', methods=['GET'])
 async def get_status(req):
+    """Status endpoint for the web UI - will expose all counters."""
+
     return json({
         "feed_count": await redis.hget(REDIS_NAMESPACE + 'status', 'feed_count'),
         "item_count": await redis.hget(REDIS_NAMESPACE + 'status', 'item_count')
@@ -50,6 +47,9 @@ async def get_status(req):
 @app.route('/feeds/<order>/<last_id>', methods=['GET'])
 @cached(ttl=20)
 async def get_feeds(req, order, last_id=None):
+    """Paged navigation of feeds - experimental, using aiocache to lessen database hits.
+       Right now this clocks in at 10K requests/s when using only 2 cores on my i5 Mac."""
+
     limit = 50
     fields = {'_id': 1, 'title': 1, 'last_fetched': 1, 'last_status': 1}
     if last_id:
@@ -62,5 +62,16 @@ async def get_feeds(req, order, last_id=None):
 
 app.static('/', './static')
 
-log.debug("Beginning run.")
-app.run(host=BIND_ADDRESS, port=HTTP_PORT, workers=cpu_count(), debug=DEBUG)
+@app.listener('after_server_start')
+def init_connections(sanic, loop):
+    """Bind the database and Redis client to Sanic's event loop."""
+    
+    global redis, db
+    redis = connect_redis()
+    motor = AsyncIOMotorClient(MONGO_SERVER, io_loop=loop)
+    db = motor[DATABASE_NAME]
+
+
+if __name__ == '__main__':
+    log.debug("Beginning run.")
+    app.run(host=BIND_ADDRESS, port=HTTP_PORT, workers=cpu_count(), debug=DEBUG)
