@@ -41,6 +41,8 @@ def _extract_phrases(sentences, language="english"):
 
 
 def _score_words(phrase_list):
+    """Score words based on frequency"""
+
     def is_numeric(word):
         # NOTE: this is a quick and dirty way to cope with multi-digit figures
         # but will be confused by currency
@@ -70,6 +72,8 @@ def _score_words(phrase_list):
 
 
 def _score_phrases(phrase_list, word_scores):
+    """Score a phrase by tallying individual word scores"""
+
     phrase_scores = {}
     for phrase in phrase_list:
         phrase_score = 0
@@ -82,6 +86,7 @@ def _score_phrases(phrase_list, word_scores):
 
 def extract_keywords(text, language="en", scores=False):
     """RAKE extractor"""
+
     lang = {"en": "english",
             "pt": "portuguese"}[language]
     sentences = sent_tokenize(text, lang)
