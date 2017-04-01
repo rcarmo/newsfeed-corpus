@@ -19,6 +19,7 @@ from nltk.corpus import stopwords
 from nltk.stem.porter import PorterStemmer
 from nltk.stem import RSLPStemmer
 from gensim import corpora, models
+from langkit import extract_keywords
 
 STOP_WORDS = {'en': stopwords.words('english'), 
               'pt': stopwords.words('portuguese')}
@@ -81,6 +82,7 @@ def get_plaintext(html):
 
 
 def tokenize(plaintext, language):
+    # TODO: move this to langkit
     try:
         stop_words = STOP_WORDS[language]
         stemmer = STEMMERS[language]
@@ -123,6 +125,7 @@ async def parse(database, feed):
                                                         "body": body,
                                                         "plaintext": plaintext,
                                                         "lang": lang,
+                                                        "keywords": extract_keywords(plaintext, lang),
                                                         "tokens": tokenize(plaintext, lang),
                                                         "url": entry.link}},
                                               upsert=True)

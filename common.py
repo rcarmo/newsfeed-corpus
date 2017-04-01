@@ -1,4 +1,7 @@
+#!/bin/env python3
+
 """ Common functions """
+
 from hashlib import sha1
 from uuid import uuid4
 from time import time
@@ -7,7 +10,7 @@ from urllib.parse import urlparse
 from asyncio import get_event_loop
 from aioredis import create_redis
 from bson import json_util
-from config import log, REDIS_SERVER
+from config import log, REDIS_SERVER, REDIS_NAMESPACE
 
 def safe_id(url):
     """Build a DocumentDB-safe and URL-safe ID that is still palatable to humans"""
@@ -24,9 +27,17 @@ async def connect_queue():
 
 async def enqueue(server, queue_name, data):
     """Enqueue an object in a given redis queue"""
-    return await server.rpush(queue_name, dumps(data, default=json_util.default))
+    return await server.rpush(REDIS_NAMESPACE + queue_name, dumps(data, default=json_util.default))
 
 async def dequeue(server, queue_name):
     """Blocking dequeue from Redis"""
-    _, data = await server.blpop(queue_name, 0)
+    _, data = await server.blpop(REDIS_NAMESPACE + queue_name, 0)
     return loads(data, object_hook=json_util.object_hook)
+
+async def get_config(server):
+    """Abstract shared config"""
+    return hgetall(REDIS_NAMESPACE + "config")
+
+async def set_config_item(server, item):
+    """Abstract shared config"""
+    return hset(REDIS_NAMESPACE + "config", item)

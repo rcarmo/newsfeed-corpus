@@ -35,7 +35,6 @@ def _extract_phrases(sentences, language="english"):
                     phrase_list.append(phrase)
                     phrase = []
             else:
-                print(word)
                 phrase.append(word.translate(PUNCTUATION)) # remove unicode quotes
     return phrase_list
 

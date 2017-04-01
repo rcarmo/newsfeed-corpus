@@ -1,3 +1,5 @@
+#!/bin/env python3
+
 """ Configuration """
 
 from cProfile import Profile
@@ -13,6 +15,7 @@ DEBUG = environ.get('DEBUG','False').lower() == 'true'
 MAX_CONCURRENT_REQUESTS = int(environ.get('MAX_CONCURRENT_REQUESTS', 100))
 MONGO_SERVER = environ.get('MONGO_SERVER', 'localhost:27017')
 REDIS_SERVER = environ.get('REDIS_SERVER', 'localhost:6379')
+REDIS_NAMESPACE = environ.get('REDIS_NAMESPACE', 'newspipe:')
 DATABASE_NAME = environ.get('DATABASE_NAME', 'feeds')
 DATE_FORMAT = '%Y-%m-%d %H:%M:%S'
 PROFILER = environ.get('PROFILER','False').lower() == "true"
