@@ -2,15 +2,19 @@
 
 """ Feed fetcher """
 
+from asyncio import (Semaphore, ensure_future, gather, get_event_loop,
+                     set_event_loop_policy, sleep)
+from config import (CHECK_INTERVAL, DATABASE_NAME, FETCH_INTERVAL,
+                    MAX_CONCURRENT_REQUESTS, MONGO_SERVER, log)
 from datetime import datetime, timedelta
 from hashlib import sha1
-from asyncio import get_event_loop, Semaphore, gather, ensure_future, set_event_loop_policy, sleep
 from traceback import format_exc
-from uvloop import EventLoopPolicy
+
 from aiohttp import ClientSession, TCPConnector
-from motor.motor_asyncio import AsyncIOMotorClient
 from common import connect_redis, dequeue, enqueue
-from config import log, CHECK_INTERVAL, FETCH_INTERVAL, MONGO_SERVER, DATABASE_NAME, MAX_CONCURRENT_REQUESTS
+from motor.motor_asyncio import AsyncIOMotorClient
+from uvloop import EventLoopPolicy
+
 
 async def fetch_one(session, feed, client, database, queue):
     """Fetch a single feed"""
