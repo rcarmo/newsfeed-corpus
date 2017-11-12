@@ -2,20 +2,22 @@
 
 """ Feed parser """
 
-from time import mktime
+from asyncio import get_event_loop, set_event_loop_policy
+from config import (DATABASE_NAME, MONGO_SERVER, REDIS_NAMESPACE, get_profile,
+                    log)
 from datetime import datetime
 from hashlib import sha1
-from asyncio import get_event_loop, set_event_loop_policy
+from time import mktime
 from traceback import format_exc
+
+from bs4 import BeautifulSoup
+from common import connect_redis, dequeue, enqueue, safe_id
+from feedparser import parse as feed_parse
+from gensim import corpora, models
+from langdetect import detect
+from langkit import extract_keywords, tokenize
 from motor.motor_asyncio import AsyncIOMotorClient
 from uvloop import EventLoopPolicy
-from feedparser import parse as feed_parse
-from bs4 import BeautifulSoup
-from langdetect import detect
-from common import connect_redis, dequeue, enqueue, safe_id
-from config import DATABASE_NAME, MONGO_SERVER, get_profile, log
-from gensim import corpora, models
-from langkit import tokenize, extract_keywords
 
 
 def get_entry_content(entry):
@@ -131,7 +133,7 @@ async def item_handler(database):
         except Exception:
             log.error(format_exc())
             break
-    await redis.hset(REDIS_NAMESPACE + 'status', 'item_count', await db.items.count())
+    await redis.hset(REDIS_NAMESPACE + 'status', 'item_count', await database.items.count())
     redis.close()
     await redis.wait_closed()
 
