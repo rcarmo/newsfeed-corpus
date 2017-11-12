@@ -2,12 +2,15 @@
 
 """ Feed enumerator """
 
+from asyncio import ensure_future, get_event_loop, set_event_loop_policy, sleep
+from config import (CHECK_INTERVAL, DATABASE_NAME, FETCH_INTERVAL,
+                    MONGO_SERVER, log)
 from datetime import datetime, timedelta
-from asyncio import get_event_loop, ensure_future, set_event_loop_policy, sleep
-from uvloop import EventLoopPolicy
+
+from common import REDIS_NAMESPACE, connect_redis, enqueue
 from motor.motor_asyncio import AsyncIOMotorClient
-from config import CHECK_INTERVAL, DATABASE_NAME, FETCH_INTERVAL, MONGO_SERVER, log
-from common import connect_redis, enqueue, REDIS_NAMESPACE
+from uvloop import EventLoopPolicy
+
 
 async def scan_feeds(db):
     """Enumerate all feeds and queue them for fetching"""
