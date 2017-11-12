@@ -2,15 +2,17 @@
 
 """ Common functions """
 
-from hashlib import sha1
-from uuid import uuid4
-from time import time
-from json import dumps, loads
-from urllib.parse import urlparse
 from asyncio import get_event_loop
+from config import REDIS_NAMESPACE, REDIS_SERVER, log
+from hashlib import sha1
+from json import dumps, loads
+from time import time
+from urllib.parse import urlparse
+from uuid import uuid4
+
 from aioredis import create_redis
 from bson import json_util
-from config import log, REDIS_SERVER, REDIS_NAMESPACE
+
 
 def safe_id(url):
     """Build a DocumentDB-safe and URL-safe ID that is still palatable to humans"""

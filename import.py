@@ -2,17 +2,20 @@
 
 """OPML importer"""
 
-from time import time, sleep, strftime
-from asyncio import get_event_loop, Semaphore, gather, ensure_future, set_event_loop_policy
-from aiohttp import ClientSession
+from asyncio import (Semaphore, ensure_future, gather, get_event_loop,
+                     set_event_loop_policy)
+from config import (DATABASE_NAME, DATE_FORMAT, FETCH_INTERVAL, MONGO_SERVER,
+                    log)
+from datetime import datetime
+from time import sleep, strftime, time
 from xml.etree import ElementTree
-from uvloop import EventLoopPolicy
+
+from aiohttp import ClientSession
+from common import REDIS_NAMESPACE, connect_redis, safe_id
 from motor.motor_asyncio import AsyncIOMotorClient
 from pymongo import ASCENDING, DESCENDING
 from pymongo.errors import DuplicateKeyError
-from datetime import datetime
-from config import log, FETCH_INTERVAL, MONGO_SERVER, DATABASE_NAME, DATE_FORMAT
-from common import safe_id, connect_redis, REDIS_NAMESPACE
+from uvloop import EventLoopPolicy
 
 
 def feeds_from_opml(filename):
@@ -58,5 +61,3 @@ if __name__ == '__main__':
         loop.run_until_complete(update_database(db,'feeds.opml'))
     finally:
         loop.close()
-
-    

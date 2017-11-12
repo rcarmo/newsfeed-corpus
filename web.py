@@ -2,17 +2,19 @@
 
 """ Web server """
 
+from config import (BIND_ADDRESS, DATABASE_NAME, DEBUG, HTTP_PORT,
+                    MONGO_SERVER, log)
 from datetime import datetime
-from multiprocessing import cpu_count
 from functools import lru_cache
+from multiprocessing import cpu_count
+
+from aiocache import SimpleMemoryCache, cached
+from common import REDIS_NAMESPACE, connect_redis
 from mako.template import Template
 from motor.motor_asyncio import AsyncIOMotorClient
 from sanic import Sanic
 from sanic.exceptions import FileNotFound, NotFound
-from sanic.response import json, text, html
-from config import log, DEBUG, BIND_ADDRESS, HTTP_PORT, MONGO_SERVER, DATABASE_NAME
-from common import connect_redis, REDIS_NAMESPACE
-from aiocache import cached, SimpleMemoryCache
+from sanic.response import html, json, text
 
 app = Sanic(__name__)
 layout = Template(filename='views/layout.tpl')
@@ -32,6 +34,7 @@ async def get_name(req):
     """Endpoint for front-end load testing using wrk.
        Reference measurement: 25K requests/s on 4 cores of a 2.9GHz i5"""
     return text("test")
+
 
 @app.route('/status', methods=['GET'])
 async def get_status(req):
