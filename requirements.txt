@@ -6,6 +6,7 @@ aiotasks>=1.0.0
 aiozmq>=0.7.1
 beautifulsoup4
 feedparser>=5.2.1
+numpy
 gensim
 hiredis
 langdetect
