@@ -7,7 +7,7 @@
             var e = new EventSource('/events');
             console.log('loaded');
 
-            e.addEventListener("requests", function (e) {
+            e.addEventListener("message", function (e) {
                 self.value = e.data;
                 self.update();
                 console.log(self.value);

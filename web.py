@@ -9,12 +9,14 @@ from functools import lru_cache
 from multiprocessing import cpu_count
 
 from aiocache import SimpleMemoryCache, cached
-from common import REDIS_NAMESPACE, connect_redis
+from common import REDIS_NAMESPACE, connect_redis, dequeue
 from mako.template import Template
 from motor.motor_asyncio import AsyncIOMotorClient
 from sanic import Sanic
+
 from sanic.exceptions import FileNotFound, NotFound
-from sanic.response import html, json, text
+from sanic.response import html, json, text, stream
+from sanic.server import HttpProtocol
 
 app = Sanic(__name__)
 layout = Template(filename='views/layout.tpl')
@@ -34,6 +36,18 @@ async def get_name(req):
     """Endpoint for front-end load testing using wrk.
        Reference measurement: 25K requests/s on 4 cores of a 2.9GHz i5"""
     return text("test")
+
+
+@app.route('/events')
+async def sse(request):
+    async def streaming_fn(response):
+        i = 1
+        while True:
+            msg = await dequeue(redis, 'ui')
+            s = 'data: ' + msg + '\r\n\r\n'
+            response.write(s.encode())
+            i += 1
+    return stream(streaming_fn, content_type='text/event-stream')
 
 
 @app.route('/status', methods=['GET'])
@@ -63,6 +77,15 @@ async def get_feeds(req, order, last_id=None):
                                    fields).sort(order).limit(limit).to_list(limit)
     return json(data)
 
+
+# Add a route-specific timeout for the SSE handler
+class CustomHttpProtocol(HttpProtocol):
+    def on_message_complete(self):
+        if self.url == b'/events':
+            self.request_timeout = 1000
+        super().on_message_complete()
+
+# Map static assets
 app.static('/', './static')
 
 @app.listener('after_server_start')
@@ -77,4 +100,4 @@ def init_connections(sanic, loop):
 
 if __name__ == '__main__':
     log.debug("Beginning run.")
-    app.run(host=BIND_ADDRESS, port=HTTP_PORT, workers=cpu_count(), debug=DEBUG)
+    app.run(host=BIND_ADDRESS, port=HTTP_PORT, workers=cpu_count(), debug=DEBUG, protocol=CustomHttpProtocol)

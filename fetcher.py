@@ -32,6 +32,7 @@ async def fetch_one(session, feed, client, database, queue):
         headers['if-modified-since'] = feed['last_modified']
 
     try:
+        await enqueue(queue, 'ui', 'Fetching ' + url)
         async with session.get(url, headers=headers) as response:
             text = await response.text()
             # TODO: check behavior for 301/302
