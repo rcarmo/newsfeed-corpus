@@ -11,7 +11,7 @@ from hashlib import sha1
 from traceback import format_exc
 
 from aiohttp import ClientSession, TCPConnector
-from common import connect_redis, dequeue, enqueue
+from common import connect_redis, dequeue, enqueue, publish
 from motor.motor_asyncio import AsyncIOMotorClient
 from uvloop import EventLoopPolicy
 
@@ -32,7 +32,7 @@ async def fetch_one(session, feed, client, database, queue):
         headers['if-modified-since'] = feed['last_modified']
 
     try:
-        await enqueue(queue, 'ui', 'Fetching ' + url)
+        await publish(queue, 'ui', {'url': url})
         async with session.get(url, headers=headers) as response:
             text = await response.text()
             # TODO: check behavior for 301/302

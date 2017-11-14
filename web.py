@@ -9,7 +9,7 @@ from functools import lru_cache
 from multiprocessing import cpu_count
 
 from aiocache import SimpleMemoryCache, cached
-from common import REDIS_NAMESPACE, connect_redis, dequeue
+from common import REDIS_NAMESPACE, connect_redis, dequeue, subscribe
 from mako.template import Template
 from motor.motor_asyncio import AsyncIOMotorClient
 from sanic import Sanic
@@ -42,8 +42,9 @@ async def get_name(req):
 async def sse(request):
     async def streaming_fn(response):
         i = 1
+        ch = subscribe(redis, 'ui')
         while True:
-            msg = await dequeue(redis, 'ui')
+            msg = await ch.get_json()
             s = 'data: ' + msg + '\r\n\r\n'
             response.write(s.encode())
             i += 1
@@ -89,11 +90,11 @@ class CustomHttpProtocol(HttpProtocol):
 app.static('/', './static')
 
 @app.listener('after_server_start')
-def init_connections(sanic, loop):
+async def init_connections(sanic, loop):
     """Bind the database and Redis client to Sanic's event loop."""
 
     global redis, db
-    redis = connect_redis()
+    redis = await connect_redis()
     motor = AsyncIOMotorClient(MONGO_SERVER, io_loop=loop)
     db = motor[DATABASE_NAME]
 

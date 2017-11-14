@@ -37,3 +37,12 @@ async def dequeue(server, queue_name):
     """Blocking dequeue from Redis"""
     _, data = await server.blpop(REDIS_NAMESPACE + queue_name, 0)
     return loads(data, object_hook=json_util.object_hook)
+
+async def publish(server, topic_name, data):
+    """Publish data"""
+    _ = await server.publish_json(topic_name, data)
+
+async def subscribe(server, topic_name):
+    """Subscribe to topic data"""
+    chan, _ = await server.subscribe(topic_name)
+    return chan

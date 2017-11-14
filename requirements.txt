@@ -1,7 +1,7 @@
 aiocache>=0.8.0
 aiodns>=1.1.1
 aiohttp>=2.3.2
-aioredis>=0.3.5
+aioredis>=1.0.0
 aiotasks>=1.0.0
 aiozmq>=0.7.1
 beautifulsoup4
