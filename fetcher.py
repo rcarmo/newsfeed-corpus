@@ -24,6 +24,7 @@ async def fetch_one(session, feed, client, database, queue):
     changed = False
     headers = {}
 
+    await publish(queue, 'ui', {'url':url})
     log.debug("Fetching %s", url)
 
     if 'etag' in feed:
@@ -32,7 +33,6 @@ async def fetch_one(session, feed, client, database, queue):
         headers['if-modified-since'] = feed['last_modified']
 
     try:
-        await publish(queue, 'ui', {'url': url})
         async with session.get(url, headers=headers) as response:
             text = await response.text()
             # TODO: check behavior for 301/302

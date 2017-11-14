@@ -44,5 +44,5 @@ async def publish(server, topic_name, data):
 
 async def subscribe(server, topic_name):
     """Subscribe to topic data"""
-    chan, _ = await server.subscribe(topic_name)
+    chan = await server.subscribe(topic_name)
     return chan

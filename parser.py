@@ -11,7 +11,7 @@ from time import mktime
 from traceback import format_exc
 
 from bs4 import BeautifulSoup
-from common import connect_redis, dequeue, enqueue, safe_id
+from common import connect_redis, dequeue, enqueue, safe_id, publish
 from feedparser import parse as feed_parse
 from gensim import corpora, models
 from langdetect import detect
@@ -82,7 +82,7 @@ def lda(tokens):
     return lda_model
 
 
-async def parse(database, feed):
+async def parse(database, feed, redis):
     """Parse a feed into its constituent entries"""
 
     result = feed_parse(feed['raw'])
@@ -105,7 +105,7 @@ async def parse(database, feed):
             except KeyError:
                 keywords = None
                 tokens = None
-
+            await publish(redis, 'ui', {'url':entry.link})
             await database.entries.update_one({'_id': safe_id(entry.link)},
                                               {'$set': {"date": when,
                                                         "title": entry.title,
@@ -129,7 +129,7 @@ async def item_handler(database):
             log.debug(job)
             feed = await database.feeds.find_one({'_id': job['_id']})
             if feed:
-                await parse(database, feed)
+                await parse(database, feed, redis)
         except Exception:
             log.error(format_exc())
             break

@@ -17,6 +17,7 @@ from sanic import Sanic
 from sanic.exceptions import FileNotFound, NotFound
 from sanic.response import html, json, text, stream
 from sanic.server import HttpProtocol
+from ujson import dumps
 
 app = Sanic(__name__)
 layout = Template(filename='views/layout.tpl')
@@ -42,10 +43,10 @@ async def get_name(req):
 async def sse(request):
     async def streaming_fn(response):
         i = 1
-        ch = subscribe(redis, 'ui')
-        while True:
+        [ch] = await subscribe(redis, 'ui')
+        while (await ch.wait_message()):
             msg = await ch.get_json()
-            s = 'data: ' + msg + '\r\n\r\n'
+            s = 'data: ' + dumps(msg) + '\r\n\r\n'
             response.write(s.encode())
             i += 1
     return stream(streaming_fn, content_type='text/event-stream')
@@ -86,8 +87,10 @@ class CustomHttpProtocol(HttpProtocol):
             self.request_timeout = 1000
         super().on_message_complete()
 
+
 # Map static assets
 app.static('/', './static')
+
 
 @app.listener('after_server_start')
 async def init_connections(sanic, loop):
