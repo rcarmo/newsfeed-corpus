@@ -65,6 +65,15 @@ async def get_status(req):
     })
 
 
+@app.route('/stats/fetcher', methods=['GET'])
+async def get_status(req):
+    cursor = db.feeds.aggregate([{"$group": {"_id": "$last_status", "count": {"$sum": 1}}}, 
+                                 {"$sort":{"count":-1}} ])
+    return json({'total': await db.feeds.count(),
+                 'status': {i['_id']: i['count'] async for i in cursor}})
+
+
+
 @app.route('/feeds/<order>', methods=['GET'])
 @app.route('/feeds/<order>/<last_id>', methods=['GET'])
 @cached(ttl=20)
