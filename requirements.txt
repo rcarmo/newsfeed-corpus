@@ -5,6 +5,7 @@ aioredis>=1.0.0b2
 aiotasks>=1.0.0
 aiozmq>=0.7.1
 beautifulsoup4
+bpython
 feedparser>=5.2.1
 numpy
 gensim

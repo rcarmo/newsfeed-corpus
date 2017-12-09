@@ -17,7 +17,10 @@ build:
 restart-web:
 	docker-compose stop web
 	docker-compose build web
-	docker-compose up -d --no-deps web 
+	docker-compose up -d --no-deps web
+
+repl:
+	docker-compose exec web python repl.py
 
 nuke-database:
 	docker-compose stop db 
