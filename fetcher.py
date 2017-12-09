@@ -18,13 +18,12 @@ from uvloop import EventLoopPolicy
 
 async def fetch_one(session, feed, client, database, queue):
     """Fetch a single feed"""
-
     url = feed['url']
     checksum = feed.get('checksum', None)
     changed = False
     headers = {}
 
-    await publish(queue, 'ui', {'url':url})
+    await publish(queue, 'ui', {'event': 'fetch_one', 'url':url})
     log.debug("Fetching %s", url)
 
     if 'etag' in feed:
@@ -40,6 +39,9 @@ async def fetch_one(session, feed, client, database, queue):
                 'last_status': response.status,
                 'last_fetched': datetime.now(),
             }
+            await publish(queue, 'ui', {'event':'fetch_result', 
+                                        'url':url, 
+                                        'status': response.status})
             if response.status == 200:
                 if 'checksum' not in feed or feed['checksum'] != checksum:
                     changed = True

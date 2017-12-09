@@ -46,7 +46,10 @@ async def sse(request):
         [ch] = await subscribe(redis, 'ui')
         while (await ch.wait_message()):
             msg = await ch.get_json()
-            s = 'data: ' + dumps(msg) + '\r\n\r\n'
+            s = ''
+            if 'event' in msg:
+                s = s + 'event: ' + msg['event'] + '\r\n' 
+            s = s + 'data: ' + dumps(msg) + '\r\n\r\n'
             response.write(s.encode())
             i += 1
     return stream(streaming_fn, content_type='text/event-stream')
