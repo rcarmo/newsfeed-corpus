@@ -8,11 +8,21 @@ PORT?=8000
 
 # Run the stack locally
 serve:
-	docker-compose up
+	docker-compose up --build
 
 # Build the base container when we update dependencies
 build:
 	docker-compose build
+
+restart-web:
+	docker-compose stop web
+	docker-compose build web
+	docker-compose up -d --no-deps web 
+
+nuke-database:
+	docker-compose stop db 
+	docker-compose build db
+	docker-compose up -d --no-deps db 
 
 # Install deps locally for REPL
 host-deps:
