@@ -102,10 +102,10 @@ async def parse(database, feed, redis):
             try:
                 keywords = extract_keywords(plaintext, lang, scores=True)[:10]
                 tokens = list(set(tokenize(plaintext, lang)))
-            except KeyError:
+            except (KeyError, TypeError):
                 keywords = None
                 tokens = None
-            await publish(redis, 'ui', {'url':entry.link})
+            await publish(redis, 'ui', {'event':'new_entry', 'url':entry.link})
             await database.entries.update_one({'_id': safe_id(entry.link)},
                                               {'$set': {"date": when,
                                                         "title": entry.title,
@@ -132,8 +132,9 @@ async def item_handler(database):
                 await parse(database, feed, redis)
         except Exception:
             log.error(format_exc())
+        except KeyboardInterrupt:
             break
-    await redis.hset(REDIS_NAMESPACE + 'status', 'item_count', await database.items.count())
+        await redis.hset(REDIS_NAMESPACE + 'status', 'item_count', await database.items.count())
     redis.close()
     await redis.wait_closed()
 
