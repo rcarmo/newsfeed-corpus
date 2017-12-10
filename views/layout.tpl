@@ -19,7 +19,7 @@
   <![endif]-->
 </head>
 <body>
- <nav class="blue lighten-1" role="navigation">
+ <nav class="blue darken-4" role="navigation">
     <div class="nav-wrapper container"><a id="logo-container" href="#" class="brand-logo">Newsfeed Collector</a>
       <ul class="right hide-on-med-and-down">
         <li><a href="#"></a></li>
@@ -64,21 +64,9 @@
     </div>
   </div>
 
-  <footer class="page-footer orange">
-    <div class="container">
-      <div class="row">
-      </div>
-    </div>
-    <div class="footer-copyright">
-      <div class="container">
-      Made using <a class="orange-text text-lighten-3" href="http://materializecss.com">Materialize</a>
-      </div>
-    </div>
-  </footer>
-
   <script defer src="/js/chartist.min.js"></script>
   <script defer src="/js/chartist-plugin-fill-donut.min.js"></script>
-  <script defer src="/js/chartist-plugin-legend.js"></script>
+  <script defer src="/js/chartist-plugin-active-legend.js"></script>
   <script defer src="/js/materialize.min.js"></script>
   <script type="riot/tag" src="fetch-table.tag"></script>
   <script type="riot/tag" src="fetcher-chart.tag"></script>

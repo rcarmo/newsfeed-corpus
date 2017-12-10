@@ -2,7 +2,8 @@
     position: relative;
     z-index: 10;
     list-style: none;
-    text-align: center;
+    text-align: left;
+    font-size: 80%;
 }
 .ct-legend li {
     position: relative;
@@ -32,26 +33,6 @@
 .ct-legend.ct-legend-inside li{
     display: block;
     margin: 0;
-}
-.ct-legend .ct-series-0:before {
-    background-color: #d70206;
-    border-color: #d70206;
-}
-.ct-legend .ct-series-1:before {
-    background-color: #f05b4f;
-    border-color: #f05b4f;
-}
-.ct-legend .ct-series-2:before {
-    background-color: #f4c63d;
-    border-color: #f4c63d;
-}
-.ct-legend .ct-series-3:before {
-    background-color: #d17905;
-    border-color: #d17905;
-}
-.ct-legend .ct-series-4:before {
-    background-color: #453d3f;
-    border-color: #453d3f;
 }
 
 .ct-hidden {

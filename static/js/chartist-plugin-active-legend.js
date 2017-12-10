@@ -93,7 +93,7 @@
                 legendElement.style.cssText = 'width: ' + chart.options.width + 'px;margin: 0 auto;';
             }
 
-            var removedSeries = [],
+            var dimmedSeries = [],
                 originalSeries = chart.data.series.slice(0);
 
             // Get the right array to use for generating the legend.
@@ -116,6 +116,8 @@
                if (classNamesViable) {
                   li.className += ' ' + options.classNames[i];
                }
+               li.style = "background-color: " + chart.data.colors[i] + "; border-color: " + chart.data.colors[i] + ";"                
+               
                li.setAttribute('data-legend', i);
                li.textContent = legend.name || legend;
                legendElement.appendChild(li);
@@ -148,61 +150,13 @@
                         return;
                     e.preventDefault();
 
-                    var seriesIndex = parseInt(li.getAttribute('data-legend')),
-                        removedSeriesIndex = removedSeries.indexOf(seriesIndex);
+                    var seriesIndex = parseInt(li.getAttribute('data-legend'));
 
-                    if (removedSeriesIndex > -1) {
-                        // Add to series again.
-                        removedSeries.splice(removedSeriesIndex, 1);
-                        li.classList.remove('inactive');
-                    } else {
-                        if (!options.removeAll) {
-                             // Remove from series, only if a minimum of one series is still visible.
-                          if ( chart.data.series.length > 1) {
-                             removedSeries.push(seriesIndex);
-                             li.classList.add('inactive');
-                          }
-                             // Set all series as active.
-                          else {
-                             removedSeries = [];
-                             var seriesItems = Array.prototype.slice.call(legendElement.childNodes);
-                             seriesItems.forEach(function (item) {
-                                item.classList.remove('inactive');
-                             });
-                          }
-                       }
-                       else {
-                          // Remove series unaffected if it is the last or not
-                          removedSeries.push(seriesIndex);
-                          li.classList.add('inactive');
-                       }
-                    }
-
-                    // Reset the series to original and remove each series that
-                    // is still removed again, to remain index order.
-                    var seriesCopy = originalSeries.slice(0);
-                    if (useLabels) {
-                        var labelsCopy = originalLabels.slice(0);
-                    }
-
-                    // Reverse sort the removedSeries to prevent removing the wrong index.
-                    removedSeries.sort(compareNumbers).reverse();
-
-                    removedSeries.forEach(function (series) {
-                        seriesCopy.splice(series, 1);
-                        if (useLabels) {
-                            labelsCopy.splice(series, 1);
-                        }
+                    var seriesItems = Array.prototype.slice.call(legendElement.childNodes);
+                    seriesItems.forEach(function (item) {
+                       item.classList.add('ct-dimmed');
                     });
-
-                    if (options.onClick) {
-                        options.onClick(chart, e);
-                    }
-
-                    chart.data.series = seriesCopy;
-                    if (useLabels) {
-                        chart.data.labels = labelsCopy;
-                    }
+                    li.classList.remove('ct-dimmed');
 
                     chart.update();
                 });
