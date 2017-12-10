@@ -1,8 +1,10 @@
 # newsfeed-corpus
 
+<img src="https://raw.githubusercontent.com/rcarmo/newsfeed-corpus/master/screenshots/2017-12-10.png" style="max-width: 100%; height: auto">
+
 ## What
 
-An ongoing attempt at tying together various ML techniques for trending topic and sentiment analysis, coupled with some experimental Python `async` coding, a distributed architecture and lots of Docker goodness.
+An ongoing attempt at tying together various ML techniques for trending topic and sentiment analysis, coupled with some experimental Python `async` coding, a distributed architecture, EventSource and lots of Docker goodness.
 
 ## Why
 
@@ -13,12 +15,13 @@ Things escalated quickly from there on several fronts:
 * I decided I wanted this to be fully distributed, so I split the logic into several worker processes who coordinate via [Redis][redis] queues, orchestrated (and deployed) using `docker-compose`
 * I decided to take a ride on the bleeding edge and refactored everything to use `asyncio/uvloop` (as well as [Sanic][sanic] for the web front-end)
 * Rather than just consuming cognitive APIs, I also decided to implement a few NLP processing techniques (I started with a RAKE keyword extractor, and am now looking at NLTK-based tagging)
+* Instead of using React, I went with RiotJS, largely because I wanted to be able to deploy new visual components without a build step.
 
 ## How
 
 This was originally the "dumb" part of the pipeline -- the corpus was fed into [Azure ML][aml] and the [Cognitive Services APIs][csa] for the nice stuff, so this started out mostly focusing fetching, parsing and filing away feeds.
 
-It's now a rather more complex beast than I originally bargained for. Besides acting as a technology demonstrator for a number of things (including odds and ends like how to bundle NLTK datasets inside Docker) it is currently pushing the envelope on [my Python Docker containers][ap], which now feature Python 3.6.1 atop Alpine Linux `edge`.
+It's now a rather more complex beast than I originally bargained for. Besides acting as a technology demonstrator for a number of things (including odds and ends like how to bundle NLTK datasets inside Docker) it is currently pushing the envelope on [my Python Docker containers][ap], which now feature Python 3.6.3 atop Ubuntu LTS.
 
 ### Architecture
 
@@ -30,7 +33,7 @@ It's now a rather more complex beast than I originally bargained for. Besides ac
       [x] keyword extraction (using `langkit.py`)
       [ ] basic sentiment analysis
 * [ ] `cortana.py` (WIP) will do topic detection and sentiment analysis
-* [ ] `web.py` (WIP will provide a simple web front-end and REST API to navigate the results
+* [ ] `web.py` (WIP) provides a simple web front-end and REST API to navigate the results
 
 Processes are written to leverage `asyncio/uvloop` and interact via [Redis][redis] (previously they interacted via [ZeroMQ][0mq], but I'm already playing around with deploying this on [Swarm and an Azure VM scaleset][swarm]). 
 
