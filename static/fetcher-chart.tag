@@ -34,7 +34,7 @@
                 self.columns.unshift([label(key), data.status[key]]);
             });
             self.update();
-            var chart = c3.generate({
+            self.chart = c3.generate({
                 bindto: '#donut' + self.UID,
                 data: {
                     columns: self.columns,
@@ -42,7 +42,18 @@
                     colors: self.colors
                 },
                 legend: {
-                   position: 'right'
+                   position: 'right',
+                   item: {
+                       onclick: function (d) { 
+                           self.chart.toggle(d);
+                           var total=0,
+                               data=self.chart.data.shown();
+                           for(var i=0,l=data.length;i<l;i++) {
+                               total+=data[i].values[0].value; 
+                           }
+                           d3.select('#donut'+self.UID+' .c3-chart-arcs-title').node().innerHTML = total;
+                       } 
+                   }
                 },
                 tooltip: {
                     format: {
@@ -50,7 +61,7 @@
                     }
                 },
                 donut: {
-                    title: self.total + " feeds",
+                    title: self.total,
                     label: {
                         show: false,
                         format: function (value) { return value; }
