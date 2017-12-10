@@ -10,6 +10,8 @@
   <link rel="stylesheet" href="http://fonts.googleapis.com/css?family=Roboto:300,400,500,700" type="text/css">
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
   <link type="text/css" rel="stylesheet" href="/css/materialize.min.css"  media="screen,projection"/>
+  <link type="text/css" rel="stylesheet" href="/css/chartist.min.css"  media="screen,projection"/>
+  <link type="text/css" rel="stylesheet" href="/css/chartist-plugin-legend.css"  media="screen,projection"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <!--[if IE]>
   <script src="/js/history.min.js"></script>
@@ -18,7 +20,7 @@
 </head>
 <body>
  <nav class="blue lighten-1" role="navigation">
-    <div class="nav-wrapper container"><a id="logo-container" href="#" class="brand-logo">News</a>
+    <div class="nav-wrapper container"><a id="logo-container" href="#" class="brand-logo">Newsfeed Collector</a>
       <ul class="right hide-on-med-and-down">
         <li><a href="#"></a></li>
       </ul>
@@ -35,8 +37,8 @@
         <div class="col s12 m6">
           <div class="card white">
             <div class="card-content black-text">
-              <span class="card-title">Feeeds</span>
-              <feed-count></feed-count>
+              <span class="card-title">Feeds</span>
+              <fetcher-chart></fetcher-chart>
             </div>
             <div class="card-action">
               <a href="#">More...</a>
@@ -74,15 +76,23 @@
     </div>
   </footer>
 
+  <script defer src="/js/chartist.min.js"></script>
+  <script defer src="/js/chartist-plugin-fill-donut.min.js"></script>
+  <script defer src="/js/chartist-plugin-legend.js"></script>
   <script defer src="/js/materialize.min.js"></script>
   <script type="riot/tag" src="fetch-table.tag"></script>
+  <script type="riot/tag" src="fetcher-chart.tag"></script>
   <script src="/js/riot+compiler.min.js"></script>
   <script src="/js/route.min.js"></script>
   <script src="/js/zepto.min.js"></script>
   <script>
+    var tagUID = 0;
     var SharedMixin = {
       observable: riot.observable(),
-      source: new EventSource('/events')
+      source: new EventSource('/events'),
+      init: function() {
+        this.UID = tagUID++
+      }
     };
     riot.compile(function() {
       riot.mount('*')
