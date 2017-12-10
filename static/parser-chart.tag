@@ -9,10 +9,11 @@
         var self = this;
         self.mixin(SharedMixin);
         self.total = 0;
+        self.activetotal = 0;
         self.columns = [];
-        
+
         self.transform = function(data) {
-            self.total = data.total;
+            self.total = self.activetotal = data.total;
             var others = 0;
             Object.keys(data.status).forEach(function(key) {
                 if(['pt', 'en'].indexOf(key) == -1) {
@@ -23,14 +24,26 @@
             });
             self.columns.unshift(['other', others]);
             self.update();
-            var chart = c3.generate({
+            self.chart = c3.generate({
                 bindto: '#donut' + self.UID,
                 data: {
                     columns: self.columns,
                     type : 'donut'
                 },
                 legend: {
-                   position: 'right'
+                   position: 'right',
+                   item: {
+                       onclick: function (d) { 
+                           self.chart.toggle(d);
+                           var total=0,
+                               data=self.chart.data.shown();
+                           for(var i=0,l=data.length;i<l;i++) {
+                               total+=data[i].values[0].value; 
+                           }
+                           self.activetotal = total;
+                           d3.select('#donut'+self.UID+' .c3-chart-arcs-title').node().innerHTML = self.activetotal;
+                       }
+                   }
                 },
                 tooltip: {
                     format: {
@@ -38,7 +51,7 @@
                     }
                 },
                 donut: {
-                    title: self.total + " entries",
+                    title: self.total,
                     label: {
                         show: false,
                         format: function (value) { return value; }
