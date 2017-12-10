@@ -4,7 +4,7 @@
 
 from config import (BIND_ADDRESS, DATABASE_NAME, DEBUG, HTTP_PORT,
                     MONGO_SERVER, log)
-from datetime import datetime
+from datetime import datetime, timedelta
 from functools import lru_cache
 from multiprocessing import cpu_count
 
@@ -66,12 +66,29 @@ async def get_status(req):
 
 
 @app.route('/stats/fetcher', methods=['GET'])
-async def get_status(req):
+async def handler(req):
     cursor = db.feeds.aggregate([{"$group": {"_id": "$last_status", "count": {"$sum": 1}}}, 
                                  {"$sort":{"count":-1}} ])
     return json({'total': await db.feeds.count(),
                  'status': {i['_id']: i['count'] async for i in cursor}})
 
+
+@app.route('/stats/parser', methods=['GET'])
+async def handler(req):
+    cursor = db.entries.aggregate([{"$group": {"_id": "$lang", "count": {"$sum": 1}}}, 
+                                   {"$sort":{"count":-1}} ])
+    return json({'total': await db.entries.count(),
+                 'status': {i['_id']: i['count'] async for i in cursor}})
+
+@app.route('/stats/post_times', methods=['GET'])
+async def handler(req):
+    # TODO: this aggregation is broken
+    cursor = db.entries.aggregate([{"$match":{"date":{"$gte": datetime.now() - timedelta(days=7), "$lt": datetime.now()}}},
+                                   {"$group":{"_id": {"lang":"$lang", "hour": { "$hour": "$date"}},"count":{"$sum": "$count"}}},
+                                   {"$sort":{"hour":1}}])
+    
+    return json({'total': await db.entries.count(),
+                 'status': 
 
 
 @app.route('/feeds/<order>', methods=['GET'])

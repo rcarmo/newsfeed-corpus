@@ -1,4 +1,4 @@
-<fetcher-chart>
+<parser-chart>
     <div class="container">
         <div class="row">
             <div id="donut{this.UID}" class="col" style="height: 160px; width: 100%;"></div>
@@ -10,36 +10,24 @@
         self.mixin(SharedMixin);
         self.total = 0;
         self.columns = [];
-        self.colors = {
-            "Pending": "#9e9e9e",
-            "Unreachable": "#d50000",
-            "Fetched": "#4caf50",
-            "Redirected": "#81c784",
-            "Inacessible": "#ff9800",
-            "Error": "#ff6d00"
-        }
-
-        function label(value) {
-            if(value==='None') return "Pending";
-            if(value==0) return "Unreachable";
-            if(value < 300) return "Fetched";
-            if(value < 400) return "Redirected";
-            if(value < 500) return "Inacessible";
-            return "Error";
-        }
-
+        
         self.transform = function(data) {
             self.total = data.total;
+            var others = 0;
             Object.keys(data.status).forEach(function(key) {
-                self.columns.unshift([label(key), data.status[key]]);
+                if(['pt', 'en'].indexOf(key) == -1) {
+                    others += data.status[key];
+                }
+                else
+                    self.columns.unshift([key, data.status[key]]);
             });
+            self.columns.unshift(['other', others]);
             self.update();
             var chart = c3.generate({
                 bindto: '#donut' + self.UID,
                 data: {
                     columns: self.columns,
-                    type : 'donut',
-                    colors: self.colors
+                    type : 'donut'
                 },
                 legend: {
                    position: 'right'
@@ -50,7 +38,7 @@
                     }
                 },
                 donut: {
-                    title: self.total + " feeds",
+                    title: self.total + " entries",
                     label: {
                         show: false,
                         format: function (value) { return value; }
@@ -60,12 +48,11 @@
         }
 
         self.on('mount', function() {
-            $.getJSON('/stats/fetcher', self.transform);
-            // first grab a snapshot through
+            $.getJSON('/stats/parser', self.transform);
 
-            this.source.addEventListener("fetcher_stats", function (e) {
+            this.source.addEventListener("parser_stats", function (e) {
                 self.transform(JSON.parse(e.data))
             }, false);
         })
     </script>
-</fetcher-chart>
+</parser-chart>
