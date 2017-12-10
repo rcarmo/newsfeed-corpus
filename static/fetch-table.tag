@@ -1,19 +1,11 @@
 <fetch-table>
     <div class="container">
         <table class="bordered">
-            <thead>
-            <tr>
-                <th>Time</th>
-                <th>URL</th>
-                <th>Status</th>
-            </tr>
-            </thead>
-
             <tbody>
             <tr each={events}>
                 <td>{time}</td>
-                <td style="max-width: 50%;" class="truncate">{url}</td>
                 <td>{status}</td>
+                <td style="max-width: 70%;" class="truncate">{url}</td>
             </tr>
             </tbody>
         </table>
@@ -26,10 +18,11 @@
         self.on('mount', function() {
             this.source.addEventListener("fetch_result", function (e) {
                 var item = JSON.parse(e.data);
-                item.time = moment().format('HH:mm:ss');
+                item.time = moment().format('HH:mm');
                 item.url = item.url.replace(/^http([s]?)\:\/\//g, '');
+                console.log(item.url);
                 self.events.unshift(item);
-                if(self.events.length > 10) {
+                if(self.events.length > 4) {
                     self.events.pop();
                 }
                 self.update();
