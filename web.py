@@ -87,8 +87,6 @@ async def handler(req):
                                    {"$group":{"_id": {"lang":"$lang", "hour": { "$hour": "$date"}},"count":{"$sum": "$count"}}},
                                    {"$sort":{"hour":1}}])
     
-    return json({'total': await db.entries.count(),
-                 'status': 
 
 
 @app.route('/feeds/<order>', methods=['GET'])

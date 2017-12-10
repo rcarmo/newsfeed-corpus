@@ -27,7 +27,7 @@
             this.source.addEventListener("fetch_result", function (e) {
                 var item = JSON.parse(e.data);
                 item.time = moment().format('HH:mm:ss');
-                item.url = url.replace(/^http([s]?)\:\/\//g, '');
+                item.url = item.url.replace(/^http([s]?)\:\/\//g, '');
                 self.events.unshift(item);
                 if(self.events.length > 10) {
                     self.events.pop();
