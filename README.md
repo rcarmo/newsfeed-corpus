@@ -26,6 +26,7 @@ It's now a rather more complex beast than I originally bargained for. Besides ac
 ### Architecture
 
 * [x] `import.py` is a one-shot OPML importer (you should place your own `feeds.opml` in the root directory)
+* [ ] `metrics.py` keeps tabs on various stats and pushes them out every few seconds
 * [x] `scheduler.py` iterates through the database and queues feeds for fetching 
 * [x] `fetcher.py` fetches feeds and stores them on DocumentDB/MongoDB
 * [x] `parser.py` parses updated feeds into separate items and performs:

@@ -74,6 +74,22 @@ services:
     working_dir: /app
     command: python parser.py
 
+  metrics:  
+    build: .
+    ports:
+      - "9213:8000"
+    env_file: 
+      - ENV
+    environment:
+      - "constraint:node.role==master"
+    volumes:
+      - .:/app
+    links:
+      - db
+      - redis
+    working_dir: /app
+    command: python metrics.py
+
   web:  
     build: .
     ports:
