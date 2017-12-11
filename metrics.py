@@ -3,7 +3,7 @@
 """ Metrics agent """
 
 from config import (BIND_ADDRESS, DATABASE_NAME, DEBUG, HTTP_PORT,
-                    MONGO_SERVER, log)
+                    MONGO_SERVER, METRICS_INTERVAL, log)
 from datetime import datetime, timedelta
 from functools import lru_cache
 from multiprocessing import cpu_count
@@ -57,11 +57,10 @@ async def get_status(req):
 
 
 async def database_feeds(db):
-    cursor = db.feeds.aggregate([{"$group": {"_id": "$last_status", "count": {"$sum": 1}}}, 
-                                 {"$sort":{"count":-1}} ])
-    counts = {i['_id']: i['count'] async for i in cursor}
-    log.debug(counts)
+    """Get database metrics pertaining to feeds"""
+
     metrics = {
+        "database_feeds_count_total": await db.feeds.count(),
         "database_feeds_error_total": 0,
         "database_feeds_unreachable_total": 0,
         "database_feeds_inaccessible_total": 0,
@@ -69,7 +68,11 @@ async def database_feeds(db):
         "database_feeds_fetched_total": 0,
         "database_feeds_pending_total": 0,
     }
-    for k,v in counts:
+    cursor = db.feeds.aggregate([{"$group": {"_id": "$last_status", "count": {"$sum": 1}}}, 
+                                 {"$sort":{"count":-1}}])
+    counts = {i['_id']: i['count'] async for i in cursor}
+    log.debug(counts)
+    for k,v in counts.items():
         if k==None:
             metrics['database_feeds_pending_total'] += v
         elif k==0:
@@ -86,27 +89,50 @@ async def database_feeds(db):
     return metrics
 
 
+async def database_entries(db):
+    """Get database metrics pertaining to entries"""
 
-@app.route('/stats/parser', methods=['GET'])
-async def handler(req):
+    metrics = {
+        "database_entries_count_total": await db.entries.count(),
+        "database_entries_lang_en_total": 0,
+        "database_entries_lang_pt_total": 0,
+        "database_entries_lang_other_total": 0
+    }
     cursor = db.entries.aggregate([{"$group": {"_id": "$lang", "count": {"$sum": 1}}}, 
-                                   {"$sort":{"count":-1}} ])
-    return json({'total': await db.entries.count(),
-                 'status': {i['_id']: i['count'] async for i in cursor}})
+                                   {"$sort":{"count":-1}}])
+    counts = {i['_id']: i['count'] async for i in cursor}})
+    for k, v in counts.items():
+        if k in ['en', 'pt']:
+            metrics['database_entries_lang_' + k + '_total'] += v
+        else
+            metrics['database_entries_lang_other_total'] += v
+    return metrics
 
-@app.route('/stats/post_times', methods=['GET'])
-async def handler(req):
-    # TODO: this aggregation is broken
-    cursor = db.entries.aggregate([{"$match":{"date":{"$gte": datetime.now() - timedelta(days=7), "$lt": datetime.now()}}},
-                                   {"$group":{"_id": {"lang":"$lang", "hour": { "$hour": "$date"}},"count":{"$sum": "$count"}}},
-                                   {"$sort":{"hour":1}}])
-    
+
+def tree_split(flat, drop_last=0):
+    res = {}
+    for k, v in flat.items():
+        parts = k.split('_').pop(-1-drop_last)
+        branch = res
+        for part in parts[:-1]:
+            branch = branch.setdefault(part, {})
+        branch[parts[-1]] = v
+    return res
+
 
 async def monitor_loop():
+    redis = await connect_redis()
     while True:
-
-        sleep(5)
-
+        metrics.update(await database_feeds())
+        metrics.update(await database_entries())
+        tree = tree_split(metrics, drop_last=1)
+        log.debug(tree)
+        await publish(queue, 'ui', {'event': 'metrics_feeds', 'data': tree['database']['feeds']})
+        await publish(queue, 'ui', {'event': 'metrics_entries', 'data': tree['database']['entries']})
+        await redis.mset({'metrics:' + k:v for k,v in metrics.items()})
+        await sleep(CHECK_INTERVAL)
+    redis.close()
+    await redis.wait_closed()
 
 
 @app.listener('after_server_start')

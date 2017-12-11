@@ -9,6 +9,7 @@ from os import environ
 
 FETCH_INTERVAL = int(environ.get('FETCH_INTERVAL', 3600))
 CHECK_INTERVAL = int(environ.get('CHECK_INTERVAL', 900))
+METRICS_INTERVAL = int(environ.get('METRICS_INTERVAL', 5))
 HTTP_PORT = int(environ.get('HTTP_PORT', 8000))
 BIND_ADDRESS = environ.get('BIND_ADDRESS','0.0.0.0')
 DEBUG = environ.get('DEBUG','False').lower() == 'true'
