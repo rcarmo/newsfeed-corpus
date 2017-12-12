@@ -18,6 +18,7 @@ from sanic.exceptions import FileNotFound, NotFound
 from sanic.response import html, json, text, stream
 from sanic.server import HttpProtocol
 from ujson import dumps
+from metrics import database_feeds, database_entries, tree_split
 
 app = Sanic(__name__)
 layout = Template(filename='views/layout.tpl')
@@ -65,28 +66,13 @@ async def get_status(req):
     })
 
 
-@app.route('/stats/fetcher', methods=['GET'])
+@app.route('/stats/feeds', methods=['GET'])
 async def handler(req):
-    cursor = db.feeds.aggregate([{"$group": {"_id": "$last_status", "count": {"$sum": 1}}}, 
-                                 {"$sort":{"count":-1}} ])
-    return json({'total': await db.feeds.count(),
-                 'status': {i['_id']: i['count'] async for i in cursor}})
+    return json(tree_split(await database_feeds(db), drop_last=1)['database']['feeds'])
 
-
-@app.route('/stats/parser', methods=['GET'])
+@app.route('/stats/entries', methods=['GET'])
 async def handler(req):
-    cursor = db.entries.aggregate([{"$group": {"_id": "$lang", "count": {"$sum": 1}}}, 
-                                   {"$sort":{"count":-1}} ])
-    return json({'total': await db.entries.count(),
-                 'status': {i['_id']: i['count'] async for i in cursor}})
-
-@app.route('/stats/post_times', methods=['GET'])
-async def handler(req):
-    # TODO: this aggregation is broken
-    cursor = db.entries.aggregate([{"$match":{"date":{"$gte": datetime.now() - timedelta(days=7), "$lt": datetime.now()}}},
-                                   {"$group":{"_id": {"lang":"$lang", "hour": { "$hour": "$date"}},"count":{"$sum": "$count"}}},
-                                   {"$sort":{"hour":1}}])
-    
+    return json(tree_split(await database_entries(db), drop_last=1)['database']['entries'])
 
 
 @app.route('/feeds/<order>', methods=['GET'])

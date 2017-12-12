@@ -2,20 +2,22 @@
 
 """ Metrics agent """
 
+from asyncio import ensure_future, sleep
 from config import (BIND_ADDRESS, DATABASE_NAME, DEBUG, HTTP_PORT,
-                    MONGO_SERVER, METRICS_INTERVAL, log)
+                    METRICS_INTERVAL, MONGO_SERVER, log)
+from copy import deepcopy
 from datetime import datetime, timedelta
-from functools import lru_cache
+from functools import lru_cache, reduce
 from multiprocessing import cpu_count
+from time import time
 
 from aiocache import SimpleMemoryCache, cached
-from common import REDIS_NAMESPACE, connect_redis, dequeue, subscribe
+from common import REDIS_NAMESPACE, connect_redis, dequeue, publish, subscribe
 from mako.template import Template
 from motor.motor_asyncio import AsyncIOMotorClient
 from sanic import Sanic
-
 from sanic.exceptions import FileNotFound, NotFound
-from sanic.response import html, json, text, stream
+from sanic.response import html, json, stream, text
 from sanic.server import HttpProtocol
 from ujson import dumps
 
@@ -26,12 +28,12 @@ db = None
 # Metrics in Prometheus format
 metrics = {
     "database_feeds_total": None,
-    "database_feeds_error_total": None,
-    "database_feeds_unreachable_total": None,
-    "database_feeds_inaccessible_total": None,
-    "database_feeds_redirected_total": None,
-    "database_feeds_fetched_total": None,
-    "database_feeds_pending_total": None,
+    "database_feeds_status_error_total": None,
+    "database_feeds_status_unreachable_total": None,
+    "database_feeds_status_inaccessible_total": None,
+    "database_feeds_status_redirected_total": None,
+    "database_feeds_status_fetched_total": None,
+    "database_feeds_status_pending_total": None,
     "database_entries_total": None,
     "database_entries_language_en": None,
     "database_entries_language_pt": None,
@@ -42,7 +44,6 @@ metrics = {
 @app.route('/', methods=['GET'])
 async def homepage(req):
     """Main page"""
-    for 
     return ""
 
 
@@ -61,31 +62,29 @@ async def database_feeds(db):
 
     metrics = {
         "database_feeds_count_total": await db.feeds.count(),
-        "database_feeds_error_total": 0,
-        "database_feeds_unreachable_total": 0,
-        "database_feeds_inaccessible_total": 0,
-        "database_feeds_redirected_total": 0,
-        "database_feeds_fetched_total": 0,
-        "database_feeds_pending_total": 0,
+        "database_feeds_status_error_total": 0,
+        "database_feeds_status_unreachable_total": 0,
+        "database_feeds_status_inaccessible_total": 0,
+        "database_feeds_status_redirected_total": 0,
+        "database_feeds_status_fetched_total": 0,
+        "database_feeds_status_pending_total": 0,
     }
     cursor = db.feeds.aggregate([{"$group": {"_id": "$last_status", "count": {"$sum": 1}}}, 
                                  {"$sort":{"count":-1}}])
     counts = {i['_id']: i['count'] async for i in cursor}
-    log.debug(counts)
     for k,v in counts.items():
         if k==None:
-            metrics['database_feeds_pending_total'] += v
+            metrics['database_feeds_status_pending_total'] += v
         elif k==0:
-            metrics['database_feeds_unreachable_total'] += v
+            metrics['database_feeds_status_unreachable_total'] += v
         elif 0 < k < 300:
-            metrics['database_feeds_fetched_total'] += v
+            metrics['database_feeds_status_fetched_total'] += v
         elif 300 <= k < 400:
-            metrics['database_feeds_redirected_total'] += v
+            metrics['database_feeds_status_redirected_total'] += v
         elif 400 <= k < 500:
-            metrics['database_feeds_inaccessible_total'] += v
+            metrics['database_feeds_status_inaccessible_total'] += v
         else:
-            metrics['database_feeds_error_total'] += v
-    log.debug(metrics)
+            metrics['database_feeds_status_error_total'] += v
     return metrics
 
 
@@ -100,37 +99,58 @@ async def database_entries(db):
     }
     cursor = db.entries.aggregate([{"$group": {"_id": "$lang", "count": {"$sum": 1}}}, 
                                    {"$sort":{"count":-1}}])
-    counts = {i['_id']: i['count'] async for i in cursor}})
+    counts = {i['_id']: i['count'] async for i in cursor}
     for k, v in counts.items():
         if k in ['en', 'pt']:
             metrics['database_entries_lang_' + k + '_total'] += v
-        else
+        else:
             metrics['database_entries_lang_other_total'] += v
     return metrics
 
 
-def tree_split(flat, drop_last=0):
-    res = {}
-    for k, v in flat.items():
-        parts = k.split('_').pop(-1-drop_last)
-        branch = res
-        for part in parts[:-1]:
-            branch = branch.setdefault(part, {})
-        branch[parts[-1]] = v
-    return res
 
+@app.route('/stats/post_times', methods=['GET'])
+async def handler(req):
+    # TODO: this aggregation is broken
+    cursor = db.entries.aggregate([{"$match":{"date":{"$gte": datetime.now() - timedelta(days=7), "$lt": datetime.now()}}},
+                                   {"$group":{"_id": {"lang":"$lang", "hour": { "$hour": "$date"}},"count":{"$sum": "$count"}}},
+                                   {"$sort":{"hour":1}}])
+    
+
+def tree_split(flat, drop_last=0):
+
+    def merge(a, b):
+        if not isinstance(b, dict):
+            return b
+        for k, v in b.items():
+            if k in a and isinstance(a[k], dict):
+                merge(a[k], v)
+            elif v:
+                a[k] = deepcopy(v)
+        return a
+
+    segments = []
+    for k, v in flat.items():
+        parts = k.split('_')[:-drop_last]
+        seg = {parts[-1:][0]: v}
+        for part in reversed(parts[:-1]):
+            seg = {part: seg}
+        segments.append(seg)
+
+    return reduce(merge, segments)
+    
 
 async def monitor_loop():
-    redis = await connect_redis()
+    global redis, db, metrics
     while True:
-        metrics.update(await database_feeds())
-        metrics.update(await database_entries())
+        log.debug("updating metrics")
+        metrics.update(await database_feeds(db))
+        metrics.update(await database_entries(db))
         tree = tree_split(metrics, drop_last=1)
-        log.debug(tree)
-        await publish(queue, 'ui', {'event': 'metrics_feeds', 'data': tree['database']['feeds']})
-        await publish(queue, 'ui', {'event': 'metrics_entries', 'data': tree['database']['entries']})
-        await redis.mset({'metrics:' + k:v for k,v in metrics.items()})
-        await sleep(CHECK_INTERVAL)
+        await redis.mset('metrics:timestamp', time(), *{'metrics:' + k:v for k,v in metrics.items() if v})
+        await publish(redis, 'ui', {'event': 'metrics_feeds', 'data': tree['database']['feeds']})
+        await publish(redis, 'ui', {'event': 'metrics_entries', 'data': tree['database']['entries']})
+        await sleep(METRICS_INTERVAL)
     redis.close()
     await redis.wait_closed()
 
@@ -143,9 +163,10 @@ async def init_connections(sanic, loop):
     redis = await connect_redis()
     motor = AsyncIOMotorClient(MONGO_SERVER, io_loop=loop)
     db = motor[DATABASE_NAME]
-    ensure_future(monitor_loop)
+    log.debug("adding task")
+    app.add_task(loop.create_task(monitor_loop()))
 
 
 if __name__ == '__main__':
     log.debug("Beginning run.")
-    app.run(host=BIND_ADDRESS, port=HTTP_PORT, workers=cpu_count(), debug=DEBUG, protocol=CustomHttpProtocol)
+    app.run(host=BIND_ADDRESS, port=HTTP_PORT, debug=DEBUG)

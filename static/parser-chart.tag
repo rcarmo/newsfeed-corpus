@@ -10,24 +10,39 @@
         self.mixin(SharedMixin);
         self.total = 0;
         self.activetotal = 0;
-        self.columns = [];
+        self.columms = [["pt",0]["en",0]["others",1]];
+
+        self.renderTotal = function() {
+            var total=0,
+                data=self.chart.data.shown();
+            for(var i=0,l=data.length;i<l;i++) {
+                total+=data[i].values[0].value; 
+            }
+            d3.select('#donut'+self.UID+' .c3-chart-arcs-title').node().innerHTML = self.total;
+        }
 
         self.transform = function(data) {
-            self.total = self.activetotal = data.total;
+            self.total = self.activetotal = data.count;
+            self.columns = [];
             var others = 0;
-            Object.keys(data.status).forEach(function(key) {
+            Object.keys(data.lang).forEach(function(key) {
                 if(['pt', 'en'].indexOf(key) == -1) {
-                    others += data.status[key];
+                    others += data.lang[key];
                 }
                 else
-                    self.columns.unshift([key, data.status[key]]);
+                    self.columns.unshift([key, data.lang[key]]);
             });
             self.columns.unshift(['other', others]);
+            self.chart.load({columns: self.columns})
+            self.renderTotal();
             self.update();
+        }
+
+        self.on('mount', function() {
             self.chart = c3.generate({
                 bindto: '#donut' + self.UID,
                 data: {
-                    columns: self.columns,
+                    columns: self.columms,
                     type : 'donut'
                 },
                 legend: {
@@ -35,13 +50,7 @@
                    item: {
                        onclick: function (d) { 
                            self.chart.toggle(d);
-                           var total=0,
-                               data=self.chart.data.shown();
-                           for(var i=0,l=data.length;i<l;i++) {
-                               total+=data[i].values[0].value; 
-                           }
-                           self.activetotal = total;
-                           d3.select('#donut'+self.UID+' .c3-chart-arcs-title').node().innerHTML = self.activetotal;
+                           self.renderTotal();
                        }
                    }
                 },
@@ -58,13 +67,10 @@
                     }
                 }
             });
-        }
+            $.getJSON('/stats/entries', self.transform);
 
-        self.on('mount', function() {
-            $.getJSON('/stats/parser', self.transform);
-
-            this.source.addEventListener("parser_stats", function (e) {
-                self.transform(JSON.parse(e.data))
+            this.source.addEventListener("metrics_entries", function (e) {
+                self.transform(JSON.parse(e.data).data)
             }, false);
         })
     </script>
