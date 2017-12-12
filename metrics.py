@@ -147,7 +147,7 @@ async def monitor_loop():
         metrics.update(await database_feeds(db))
         metrics.update(await database_entries(db))
         tree = tree_split(metrics, drop_last=1)
-        await redis.mset('metrics:timestamp', time(), *{'metrics:' + k:v for k,v in metrics.items() if v})
+        #await redis.mset('metrics:timestamp', time(), *{'metrics:' + k:v for k,v in metrics.items() if v})
         await publish(redis, 'ui', {'event': 'metrics_feeds', 'data': tree['database']['feeds']})
         await publish(redis, 'ui', {'event': 'metrics_entries', 'data': tree['database']['entries']})
         await sleep(METRICS_INTERVAL)
