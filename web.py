@@ -7,18 +7,19 @@ from config import (BIND_ADDRESS, DATABASE_NAME, DEBUG, HTTP_PORT,
 from datetime import datetime, timedelta
 from functools import lru_cache
 from multiprocessing import cpu_count
+from traceback import format_exc
 
 from aiocache import SimpleMemoryCache, cached
-from common import REDIS_NAMESPACE, connect_redis, dequeue, subscribe, unsubscribe
+from common import (REDIS_NAMESPACE, connect_redis, dequeue, subscribe,
+                    unsubscribe)
 from mako.template import Template
+from metrics import database_entries, database_feeds, tree_split
 from motor.motor_asyncio import AsyncIOMotorClient
 from sanic import Sanic
-
 from sanic.exceptions import FileNotFound, NotFound, RequestTimeout
-from sanic.response import html, json, text, stream
+from sanic.response import html, json, stream, text
 from sanic.server import HttpProtocol
 from ujson import dumps
-from metrics import database_feeds, database_entries, tree_split
 
 app = Sanic(__name__)
 layout = Template(filename='views/layout.tpl')
@@ -54,8 +55,9 @@ async def sse(request):
                 s = s + 'data: ' + dumps(msg) + '\r\n\r\n'
                 response.write(s.encode())
                 i += 1
-        except RequestTimeout:
-            unsubscribe(redis, 'ui')
+        except Exception:
+            log.error(format_exc())
+            await unsubscribe(redis, 'ui')
     return stream(streaming_fn, content_type='text/event-stream')
 
 
