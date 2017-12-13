@@ -9,12 +9,12 @@ from functools import lru_cache
 from multiprocessing import cpu_count
 
 from aiocache import SimpleMemoryCache, cached
-from common import REDIS_NAMESPACE, connect_redis, dequeue, subscribe
+from common import REDIS_NAMESPACE, connect_redis, dequeue, subscribe, unsubscribe
 from mako.template import Template
 from motor.motor_asyncio import AsyncIOMotorClient
 from sanic import Sanic
 
-from sanic.exceptions import FileNotFound, NotFound
+from sanic.exceptions import FileNotFound, NotFound, RequestTimeout
 from sanic.response import html, json, text, stream
 from sanic.server import HttpProtocol
 from ujson import dumps
@@ -45,14 +45,17 @@ async def sse(request):
     async def streaming_fn(response):
         i = 1
         [ch] = await subscribe(redis, 'ui')
-        while (await ch.wait_message()):
-            msg = await ch.get_json()
-            s = ''
-            if 'event' in msg:
-                s = s + 'event: ' + msg['event'] + '\r\n' 
-            s = s + 'data: ' + dumps(msg) + '\r\n\r\n'
-            response.write(s.encode())
-            i += 1
+        try:
+            while (await ch.wait_message()):
+                msg = await ch.get_json()
+                s = ''
+                if 'event' in msg:
+                    s = s + 'event: ' + msg['event'] + '\r\n' 
+                s = s + 'data: ' + dumps(msg) + '\r\n\r\n'
+                response.write(s.encode())
+                i += 1
+        except RequestTimeout:
+            unsubscribe(redis, 'ui')
     return stream(streaming_fn, content_type='text/event-stream')
 
 
@@ -103,7 +106,6 @@ class CustomHttpProtocol(HttpProtocol):
 
 # Map static assets
 app.static('/', './static')
-
 
 @app.listener('after_server_start')
 async def init_connections(sanic, loop):

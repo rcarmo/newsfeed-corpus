@@ -35,7 +35,6 @@
                 var label = key.charAt(0).toUpperCase() + key.slice(1);
                 self.columns.unshift([label, data.status[key]]);
             });
-            console.log(self.columns)
             self.chart.load({columns: self.columns})
             self.renderTotal();
             self.update();
@@ -54,12 +53,7 @@
                    item: {
                        onclick: function (d) { 
                            self.chart.toggle(d);
-                           var total=0,
-                               data=self.chart.data.shown();
-                           for(var i=0,l=data.length;i<l;i++) {
-                               total+=data[i].values[0].value; 
-                           }
-                           d3.select('#donut'+self.UID+' .c3-chart-arcs-title').node().innerHTML = total;
+                           self.renderTotal();
                        } 
                    }
                 },

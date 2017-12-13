@@ -46,3 +46,7 @@ async def subscribe(server, topic_name):
     """Subscribe to topic data"""
     chan = await server.subscribe(topic_name)
     return chan
+
+async def unsubscribe(server, topic_name):
+    """Unsubscribe from topic data"""
+    _ = await server.unsubscribe(topic_name)
