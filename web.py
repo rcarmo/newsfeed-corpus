@@ -46,6 +46,7 @@ async def sse(request):
     async def streaming_fn(response):
         i = 1
         [ch] = await subscribe(redis, 'ui')
+        log.debug("Subscribed to UI events")
         while (await ch.wait_message()):
             msg = await ch.get_json()
             s = ''
@@ -58,7 +59,7 @@ async def sse(request):
             except Exception:
                 log.error(format_exc())
                 await unsubscribe(redis, 'ui')
-                log.debug("Unsubscribed")
+                log.debug("Unsubscribed from UI events")
                 break
     return stream(streaming_fn, content_type='text/event-stream')
 
