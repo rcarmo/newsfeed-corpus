@@ -67,10 +67,10 @@
     </div>
   </div>
 
-  <script defer src="/js/d3.v3.min.js"></script>
-  <script defer src="/js/c3.min.js"></script>
-  <script defer src="/js/moment.min.js"></script>
-  <script defer src="/js/materialize.min.js"></script>
+  <script src="/js/d3.v3.min.js"></script>
+  <script src="/js/c3.min.js"></script>
+  <script src="/js/moment.min.js"></script>
+  <script src="/js/materialize.min.js"></script>
   <script type="riot/tag" src="fetch-table.tag"></script>
   <script type="riot/tag" src="fetcher-chart.tag"></script>
   <script type="riot/tag" src="parser-chart.tag"></script>
