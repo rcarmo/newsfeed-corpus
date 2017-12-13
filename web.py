@@ -46,18 +46,19 @@ async def sse(request):
     async def streaming_fn(response):
         i = 1
         [ch] = await subscribe(redis, 'ui')
-        try:
-            while (await ch.wait_message()):
-                msg = await ch.get_json()
-                s = ''
-                if 'event' in msg:
-                    s = s + 'event: ' + msg['event'] + '\r\n' 
-                s = s + 'data: ' + dumps(msg) + '\r\n\r\n'
+        while (await ch.wait_message()):
+            msg = await ch.get_json()
+            s = ''
+            if 'event' in msg:
+                s = s + 'event: ' + msg['event'] + '\r\n' 
+            s = s + 'data: ' + dumps(msg) + '\r\n\r\n'
+            try:
                 response.write(s.encode())
                 i += 1
-        except Exception:
-            log.error(format_exc())
-            await unsubscribe(redis, 'ui')
+            except Exception:
+                log.error(format_exc())
+                await unsubscribe(redis, 'ui')
+                break
     return stream(streaming_fn, content_type='text/event-stream')
 
 
