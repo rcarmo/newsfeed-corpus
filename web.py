@@ -58,6 +58,7 @@ async def sse(request):
             except Exception:
                 log.error(format_exc())
                 await unsubscribe(redis, 'ui')
+                log.debug("Unsubscribed")
                 break
     return stream(streaming_fn, content_type='text/event-stream')
 
