@@ -23,6 +23,10 @@ This was originally the "dumb" part of the pipeline -- the corpus was fed into [
 
 It's now a rather more complex beast than I originally bargained for. Besides acting as a technology demonstrator for a number of things (including odds and ends like how to bundle NLTK datasets inside Docker) it is currently pushing the envelope on [my Python Docker containers][ap], which now feature Python 3.6.3 atop Ubuntu LTS.
 
+## ToDo
+
+* [ ] move to [billboard.js](https://github.com/naver/billboard.js)
+
 ### Architecture
 
 * [x] `import.py` is a one-shot OPML importer (you should place your own `feeds.opml` in the root directory)
