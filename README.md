@@ -16,6 +16,7 @@ Things escalated quickly from there on several fronts:
 * I decided to take a ride on the bleeding edge and refactored everything to use `asyncio/uvloop` (as well as [Sanic][sanic] for the web front-end)
 * Rather than just consuming cognitive APIs, I also decided to implement a few NLP processing techniques (I started with a RAKE keyword extractor, and am now looking at NLTK-based tagging)
 * Instead of using React, I went with RiotJS, largely because I wanted to be able to deploy new visual components without a build step.
+* I also started using this as a "complex" Docker/Kubernetes demo, which meant some flashy features (like a graphical dashboard) started taking precedence.
 
 ## How
 
@@ -26,6 +27,7 @@ It's now a rather more complex beast than I originally bargained for. Besides ac
 ## ToDo
 
 * [ ] move to [billboard.js](https://github.com/naver/billboard.js)
+* [ ] Add `auth0` support
 
 ### Architecture
 
