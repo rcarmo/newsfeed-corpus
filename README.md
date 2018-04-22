@@ -40,7 +40,7 @@ It's now a rather more complex beast than I originally bargained for. Besides ac
       [x] keyword extraction (using `langkit.py`)
       [ ] basic sentiment analysis
 * [ ] `cortana.py` (WIP) will do topic detection and sentiment analysis
-* [ ] `web.py` (WIP) provides a simple web front-end and REST API to navigate the results
+* [x] `web.py` provides a simple web front-end for live status updates via SSE.
 
 Processes are written to leverage `asyncio/uvloop` and interact via [Redis][redis] (previously they interacted via [ZeroMQ][0mq], but I'm already playing around with deploying this on [Swarm and an Azure VM scaleset][swarm]). 
 
