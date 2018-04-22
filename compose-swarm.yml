@@ -30,7 +30,7 @@ services:
       - db
       - redis
     working_dir: /app
-    command: python import.py
+    command: python -u import.py
 
   scheduler:
     build: .
@@ -44,7 +44,7 @@ services:
       - db
       - redis
     working_dir: /app
-    command: python scheduler.py
+    command: python -u scheduler.py
 
   fetcher:
     build: .
@@ -58,7 +58,7 @@ services:
       - db
       - redis
     working_dir: /app
-    command: python fetcher.py
+    command: python -u fetcher.py
 
   parser:
     build: .
@@ -72,7 +72,7 @@ services:
       - db
       - redis
     working_dir: /app
-    command: python parser.py
+    command: python -u parser.py
 
   web:  
     build: .
@@ -88,4 +88,4 @@ services:
       - db
       - redis
     working_dir: /app
-    command: python web.py
+    command: python -u web.py
