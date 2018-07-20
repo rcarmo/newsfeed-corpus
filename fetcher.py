@@ -11,10 +11,14 @@ from hashlib import sha1
 from traceback import format_exc
 
 from aiohttp import ClientSession, TCPConnector
-from common import connect_redis, dequeue, enqueue, publish
+from common import connect_redis, dequeue, enqueue, publish, retry
 from motor.motor_asyncio import AsyncIOMotorClient
+from pymongo.errors import OperationFailure
 from uvloop import EventLoopPolicy
 
+@retry(10, OperationFailure, 3)
+async def do_update(collection, *args, **kwargs):
+    collection.update_one(*args, **kwargs)
 
 async def fetch_one(session, feed, client, database, queue):
     """Fetch a single feed"""
@@ -54,7 +58,7 @@ async def fetch_one(session, feed, client, database, queue):
             if 'last-modified' in response.headers:
                 update['last_modified'] = response.headers['last-modified']
 
-            await database.feeds.update_one({'url': url}, {'$set': update})
+            await do_update(database.feeds, {'url': url}, {'$set': update})
 
             if changed:
                 await enqueue(queue, 'parser', {
@@ -65,7 +69,7 @@ async def fetch_one(session, feed, client, database, queue):
 
     except Exception:
         log.error(format_exc())
-        await database.feeds.update_one({'url': url},
+        await do_update(database.feeds, {'url': url},
                                         {'$set': {'last_status': 0,
                                                   'last_fetched': datetime.now()}})
         return feed, 0
