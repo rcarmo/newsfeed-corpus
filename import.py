@@ -47,7 +47,7 @@ async def update_database(db, filename):
             except DuplicateKeyError as e:
                 log.debug(e)
     redis = await connect_redis()
-    await redis.hset(REDIS_NAMESPACE + 'status', 'feed_count', await db.feeds.count())
+    await redis.hset(REDIS_NAMESPACE + 'status', 'feed_count', await db.feeds.count_documents({}))
 
 
 if __name__ == '__main__':
