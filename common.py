@@ -27,7 +27,21 @@ async def connect_redis(loop=None):
     """Connect to a Redis server"""
     if not loop:
         loop = get_event_loop()
-    return await create_redis(REDIS_SERVER.split(':'), loop=loop)
+
+    parts = REDIS_SERVER.split(",")
+    address = tuple(parts[0].split(":"))
+    rest = parts[1:]
+    types = {'db': int, 'password': str, 'ssl': bool}
+    params = {'loop':loop}
+    for param in rest:
+        try:
+            name, value = param.split('=',1)
+            if name in types:
+                params[name] = types[name](value)
+        except ValueError:
+            log.warn("Could not parse %s" % param)
+            next
+    return await create_redis(address, **params)
 
 async def enqueue(server, queue_name, data):
     """Enqueue an object in a given redis queue"""
