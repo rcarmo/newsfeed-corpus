@@ -2,7 +2,7 @@
 
 """ Common functions """
 
-from asyncio import get_event_loop
+from asyncio import get_event_loop, sleep
 from config import REDIS_NAMESPACE, REDIS_SERVER, log
 from hashlib import sha1
 from json import dumps, loads
@@ -14,8 +14,22 @@ from aioredis import create_redis
 from bson import json_util
 
 
+def retry(attempts, on_exception, interval=0):
+    def wrap(func):
+        def f_retry(*args, **kwargs):
+            for i in range(attempts):
+                try: 
+                    return func(*args, **kwargs)
+                except on_exception as e:
+                    log.debug("retry %d for %s(%s, %s), waiting %d" % (i, func,args,kwargs, interval))
+                    sleep(interval)
+                    continue
+        return f_retry
+    return wrap
+
+
 def safe_id(url):
-    """Build a DocumentDB-safe and URL-safe ID that is still palatable to humans"""
+    """Build a CosmosDB-safe and URL-safe ID that is still palatable to humans"""
     fragments = urlparse(url)
     safe = fragments.netloc + fragments.path.replace('/', '_').replace('+', '-')
     if fragments.params or fragments.query:
