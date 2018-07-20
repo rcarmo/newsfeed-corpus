@@ -22,19 +22,23 @@ async def scan_feeds(db):
 
     while True:
         threshold = datetime.now() - timedelta(seconds=FETCH_INTERVAL)
+        log.debug(threshold)
         queue = await connect_redis()
         log.info("Scanning feed list.")
-        await queue.hset(REDIS_NAMESPACE + 'status', 'feed_count', await db.feeds.count())
-        async for feed in db.feeds.find({}):
+        log.debug("Starting loop")
+        count = 0
+        async for feed in db.feeds.find({'last_fetched': {'$lt': threshold}}):
+            count = count + 1
             url = feed['url']
-            #log.debug("Checking %s", url)
-            last_fetched = feed.get('last_fetched', threshold)
-            if last_fetched <= threshold:
-                log.debug("Queueing %s", url)
-                await enqueue(queue, "fetcher", {
-                    "_id": feed['_id'],
-                    "scheduled_at": datetime.now()
-                })
+            log.debug("Checking %d: %s", count, url)
+            log.debug("Queueing %s", url)
+            await enqueue(queue, "fetcher", {
+                "_id": feed['_id'],
+                "scheduled_at": datetime.now()
+            })
+            if not (count % 10):
+               await queue.hset(REDIS_NAMESPACE + 'status', 'feed_count', count)
+        await queue.hset(REDIS_NAMESPACE + 'status', 'feed_count', count)
         queue.close()
         await queue.wait_closed()
         log.info("Run complete, sleeping %ds...", CHECK_INTERVAL)
