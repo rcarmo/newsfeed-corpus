@@ -40,8 +40,11 @@ async def update_database(db, filename):
     for feed in feeds_from_opml(filename):
         if not await feeds.find_one({'url': feed['url']}):
             log.debug("Inserting %s" % feed)
-            feed['_id'] = safe_id(feed['url'])
-            feed['created'] = datetime.now()
+            feed = dict(feed, **{
+                '_id': safe_id(feed['url']),
+                'created': datetime.now(),
+                'last_fetched': datetime(1970, 1, 1)
+            })
             try:
                 await feeds.insert_one(feed)
             except DuplicateKeyError as e:
