@@ -4,6 +4,9 @@ MONGO_SERVER?=localhost:27017
 DATABASE_NAME?=feeds
 PORT?=8000
 
+# Permanent local overrides
+-include .env
+
 # Run the stack locally
 serve:
 	docker-compose up --build

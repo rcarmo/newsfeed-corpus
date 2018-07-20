@@ -28,6 +28,7 @@ It's now a rather more complex beast than I originally bargained for. Besides ac
 
 * [ ] move to [billboard.js](https://github.com/naver/billboard.js)
 * [ ] Add `auth0` support
+* [ ] Move to Cosmos DB
 
 ### Architecture
 
