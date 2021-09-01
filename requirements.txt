@@ -22,3 +22,4 @@ sanic>=21.6.2
 stop-words>=2018.7.23
 ujson>=4.1.0
 uvloop>=0.16.0
+python-Levenshtein
