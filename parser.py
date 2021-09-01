@@ -122,7 +122,7 @@ async def item_handler(database):
     """Break down feeds into individual items"""
 
     redis = await connect_redis()
-    log.info("Beginning run.")
+    log.info("Starting.")
     while True:
         try:
             job = await(dequeue(redis, 'parser'))
@@ -136,6 +136,7 @@ async def item_handler(database):
             break
         await redis.hset(REDIS_NAMESPACE + 'status', 'item_count', await database.items.count())
     redis.close()
+    log.info("Exiting.")
     await redis.wait_closed()
 
 

@@ -20,7 +20,7 @@ from uvloop import EventLoopPolicy
 async def do_update(collection, *args, **kwargs):
     collection.update_one(*args, **kwargs)
 
-async def fetch_one(session, feed, client, database, queue):
+async def fetch_one(session, feed, database, queue):
     """Fetch a single feed"""
     url = feed['url']
     checksum = feed.get('checksum', None)
@@ -75,34 +75,33 @@ async def fetch_one(session, feed, client, database, queue):
         return feed, 0
 
 
-async def throttle(sem, session, feed, client, database, queue):
+async def throttle(sem, session, feed, database, queue):
     """Throttle number of simultaneous requests"""
 
     async with sem:
-        res = await fetch_one(session, feed, client, database, queue)
+        res = await fetch_one(session, feed, database, queue)
         log.info("%s: %d", res[0]['url'], res[1])
 
 
 async def fetcher(database):
     """Fetch all the feeds"""
 
-    # disable certificate validation to cope with self-signed certificates in some feed back-ends
-    client = ClientSession(connector=TCPConnector(verify_ssl=False))
     sem = Semaphore(MAX_CONCURRENT_REQUESTS)
 
     queue = await connect_redis()
     while True:
-        log.info("Beginning run.")
+        log.info("Starting.")
         tasks = []
         threshold = datetime.now() - timedelta(seconds=FETCH_INTERVAL)
-        async with ClientSession() as session:
+        # disable certificate validation to cope with self-signed certificates in some feed back-ends
+        async with ClientSession(connector=TCPConnector(ssl=False)) as session:
             while True:
                 try:
                     job = await dequeue(queue, 'fetcher')
                     feed = await database.feeds.find_one({'_id': job['_id']})
                     last_fetched = feed.get('last_fetched', threshold)
                     if last_fetched <= threshold:
-                        task = ensure_future(throttle(sem, session, feed, client, database, queue))
+                        task = ensure_future(throttle(sem, session, feed, database, queue))
                         tasks.append(task)
                 except Exception:
                     log.error(format_exc())
