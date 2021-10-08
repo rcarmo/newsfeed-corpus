@@ -10,7 +10,7 @@ from time import time
 from urllib.parse import urlparse
 from uuid import uuid4
 
-from aioredis import create_connection
+from aioredis import from_url
 from bson import json_util
 
 
@@ -41,7 +41,7 @@ def safe_id(url):
 async def connect_redis(loop=None):
     """Connect to a Redis server"""
 
-    return await create_connection(REDIS_SERVER)
+    return await from_url(REDIS_SERVER)
 
 async def enqueue(server, queue_name, data):
     """Enqueue an object in a given redis queue"""
