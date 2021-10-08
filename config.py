@@ -5,7 +5,7 @@
 from cProfile import Profile
 from logging import getLogger
 from logging.config import dictConfig
-from os import environ
+from os import environ, cpu_count
 
 FETCH_INTERVAL = int(environ.get('FETCH_INTERVAL', 3600))
 CHECK_INTERVAL = int(environ.get('CHECK_INTERVAL', 900))
@@ -20,6 +20,10 @@ REDIS_NAMESPACE = environ.get('REDIS_NAMESPACE', 'newspipe:')
 DATABASE_NAME = environ.get('DATABASE_NAME', 'feeds')
 DATE_FORMAT = '%Y-%m-%d %H:%M:%S'
 PROFILER = environ.get('PROFILER','False').lower() == "true"
+SANIC_WORKERS = int(environ.get("SANIC_WORKERS", 0))
+
+if SANIC_WORKERS == 0:
+    SANIC_WORKERS = cpu_count()
 
 if PROFILER:
     profiler = Profile()

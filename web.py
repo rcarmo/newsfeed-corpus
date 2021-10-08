@@ -3,7 +3,7 @@
 """ Web server """
 
 from config import (BIND_ADDRESS, DATABASE_NAME, DEBUG, HTTP_PORT,
-                    MONGO_SERVER, log)
+                    MONGO_SERVER, SANIC_WORKERS, log)
 from datetime import datetime, timedelta
 from functools import lru_cache
 from multiprocessing import cpu_count
@@ -125,4 +125,4 @@ async def init_connections(sanic, loop):
 
 if __name__ == '__main__':
     log.debug("Beginning run.")
-    app.run(host=BIND_ADDRESS, port=HTTP_PORT, workers=cpu_count(), debug=DEBUG, protocol=CustomHttpProtocol)
+    app.run(host=BIND_ADDRESS, port=HTTP_PORT, workers=SANIC_WORKERS, debug=DEBUG, protocol=CustomHttpProtocol)
