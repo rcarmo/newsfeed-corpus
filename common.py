@@ -58,8 +58,8 @@ async def publish(conn, topic_name, data):
 
 async def subscribe(conn, topic_name):
     """Subscribe to topic data"""
-    pubsub = conn.pubsub()
-    chan = await pubsub.subscribe(topic_name)
+    chan = conn.pubsub()
+    await pubsub.subscribe(topic_name)
     return chan
 
 async def unsubscribe(conn, topic_name):
