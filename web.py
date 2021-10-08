@@ -120,6 +120,7 @@ async def init_connections(sanic, loop):
     redis = await connect_redis()
     motor = AsyncIOMotorClient(MONGO_SERVER, io_loop=loop)
     db = motor[DATABASE_NAME]
+    log.info(f"Initialized Motor: {db}")
 
 
 if __name__ == '__main__':
