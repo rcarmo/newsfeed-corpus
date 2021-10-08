@@ -43,7 +43,7 @@ async def get_name(req):
 async def sse(request):
     async def streaming_fn(response):
         i = 1
-        [ch] = await subscribe(redis, 'ui')
+        ch = await subscribe(redis, 'ui')
         log.debug("%s subscribed to UI events" % request.ip)
         while (await ch.wait_message()):
             msg = await ch.get_json()
