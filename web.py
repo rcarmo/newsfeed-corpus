@@ -45,7 +45,7 @@ async def sse(request):
         i = 1
         ch = await subscribe(redis, 'ui')
         log.debug("%s subscribed to UI events" % request.ip)
-        while (await ch.wait_message()):
+        while (await ch.get_message()):
             msg = await ch.get_json()
             s = ''
             if 'event' in msg:
