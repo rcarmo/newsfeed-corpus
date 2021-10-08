@@ -2,16 +2,14 @@
 
 """ Web server """
 
-from config import (BIND_ADDRESS, DATABASE_NAME, DEBUG, HTTP_PORT,
-                    MONGO_SERVER, SANIC_WORKERS, log)
+from config import (BIND_ADDRESS, DATABASE_NAME, DEBUG, HTTP_PORT, MONGO_SERVER, SANIC_WORKERS, log)
 from datetime import datetime, timedelta
 from functools import lru_cache
 from multiprocessing import cpu_count
 from traceback import format_exc
 
 from aiocache import SimpleMemoryCache, cached
-from common import (REDIS_NAMESPACE, connect_redis, dequeue, subscribe,
-                    unsubscribe)
+from common import (REDIS_NAMESPACE, connect_redis, dequeue, subscribe, unsubscribe)
 from mako.template import Template
 from metrics import database_entries, database_feeds, tree_split
 from motor.motor_asyncio import AsyncIOMotorClient
