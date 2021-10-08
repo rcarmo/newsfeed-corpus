@@ -15,6 +15,10 @@ serve:
 build:
 	docker-compose build
 
+deploy:
+	git push production deploy-on-piku:master
+	ssh piku@piku-ampere restart newsfeedcorpus
+
 restart-web:
 	docker-compose stop web
 	docker-compose build web
