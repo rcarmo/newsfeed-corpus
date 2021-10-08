@@ -43,25 +43,26 @@ async def connect_redis(loop=None):
 
     return await from_url(REDIS_SERVER)
 
-async def enqueue(server, queue_name, data):
+async def enqueue(conn, queue_name, data):
     """Enqueue an object in a given redis queue"""
-    return await server.rpush(REDIS_NAMESPACE + queue_name, dumps(data, default=json_util.default))
+    return await conn.rpush(REDIS_NAMESPACE + queue_name, dumps(data, default=json_util.default))
 
-async def dequeue(server, queue_name):
+async def dequeue(conn, queue_name):
     """Blocking dequeue from Redis"""
-    _, data = await server.blpop(REDIS_NAMESPACE + queue_name, 0)
+    _, data = await conn.blpop(REDIS_NAMESPACE + queue_name, 0)
     return loads(data, object_hook=json_util.object_hook)
 
-async def publish(server, topic_name, data):
+async def publish(conn, topic_name, data):
     """Publish data"""
-    _ = await server.publish_json(topic_name, data)
+    _ = await conn.publish_json(topic_name, data)
 
-async def subscribe(server, topic_name):
+async def subscribe(conn, topic_name):
     """Subscribe to topic data"""
-    log.debug(server)
-    chan = await server.subscribe(topic_name)
+    pubsub = conn.pubsub()
+    chan = await pubsub.subscribe(topic_name)
     return chan
 
-async def unsubscribe(server, topic_name):
+async def unsubscribe(conn, topic_name):
     """Unsubscribe from topic data"""
-    _ = await server.unsubscribe(topic_name)
+    pubsub = conn.pubsub()
+    _ = await pubsub.unsubscribe(topic_name)
